@@ -30,3 +30,16 @@ async def main():
     print(time.time() - start)
 
 asyncio.run(main())
+
+
+
+# BeautifulSoup4
+from bs4 import BeautifulSoup
+from llama_client.funclib import read_html
+
+filepath = 'llama_client/test_context.html'
+
+html = read_html(filepath)
+chtml = BeautifulSoup(html, features="html.parser")
+
+print(chtml.h1) # returns h1
