@@ -8,23 +8,6 @@ filepath = 'llama_client/test_context.html'
 html = read_html(filepath)
 soup = BeautifulSoup(html, features="html.parser")
 
-soup = BeautifulSoup('''
-<p>line-2 content</p>
-<p>line-1 content</p>
-<p>line0 content</p>  
-<p>line1 content</p>
-<p>line2 kw0</p>
-<p>line3 content</p>
-<p>line4 kw1</p>
-<p>line5 content</p>
-<p>line6 content</p>
-<p>line7 content</p>
-<p>line8 kw0</p>
-<p>line9 content</p>
-<p>line10 content</p>
-<p>line11 content</p>                    
-''', features="html.parser")
-
 """
 truncont(cont, kw, area)
 cont = BeautifulSoup obj
@@ -77,21 +60,44 @@ def truncont(cont, kw, area):
                 lines.append(line)
 
     # Use dictionaries to prevent duplicates and maintain order
-    fincont = {}
+    indeces = []
 
-    # Find all 
+    # Find all indeces of lines including those area above and area below
     for line in lines:
         ind = cont.index(line)
 
-        for li in cont[ind - area : ind + 1]:
-            fincont[li] = ''
-        
-        fincont[cont[ind]] = ''
+        for index in range(ind - area, ind + area + 1):
+            indeces.append(index)
 
-        for li in cont[ind : ind + area + 1]:
-            fincont[li] = ''
+    # Get rid of duplicate indeces
+    indeces = sorted(set(indeces))
+    fincont = []
+
+    for index in indeces:
+        try:
+            fincont.append(cont[index])
+        except IndexError:
+            pass
     
-    return '\n'.join(fincont.keys())
+    return '\n'.join(fincont)
 
+soup = BeautifulSoup('''
+<p>line-2 content</p>
+<p>line-1 content</p>
+duplicate
+duplicate
+<p>line2 kw0</p>
+<p>line3 content</p>
+<p>line4 kw1</p>
+<p>line5 content</p>
+duplicate
+<p>line7 content</p>
+<p>line8 kw0</p>
+<p>line9 content</p>
+duplicate
+<p>line11 content</p>                    
+''', features="html.parser")
 
-print(truncont(soup, ['kw0', 'kw1', 'kw2'], 1)) # one line above and one line below
+kw = ['kw0', 'kw1', 'kw2']
+
+print(truncont(soup, kw, 1))
