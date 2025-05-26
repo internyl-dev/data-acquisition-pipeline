@@ -56,7 +56,8 @@ def truncont(cont, kw, area):
     lines = []
     for line in cont:
         for keyword in kw:
-            if bool(re.search(re.compile(fr'{keyword}', re.I), line)):
+            # Non case-sensitive keyword can be followed by 1 s but not any other letter
+            if bool(re.search(re.compile(fr'{keyword}(?!([\s\S])[a-zA-Z])', re.I), line)):
                 lines.append(line)
 
     # Use dictionaries to prevent duplicates and maintain order
@@ -81,23 +82,6 @@ def truncont(cont, kw, area):
     
     return '\n'.join(fincont)
 
-soup = BeautifulSoup('''
-<p>line-2 content</p>
-<p>line-1 content</p>
-duplicate
-duplicate
-<p>line2 kw0</p>
-<p>line3 content</p>
-<p>line4 kw1</p>
-<p>line5 content</p>
-duplicate
-<p>line7 content</p>
-<p>line8 kw0</p>
-<p>line9 content</p>
-duplicate
-<p>line11 content</p>                    
-''', features="html.parser")
+from keywords import kw_cost
 
-kw = ['kw0', 'kw1', 'kw2']
-
-print(truncont(soup, kw, 1))
+print(truncont(soup, kw_cost, 1))

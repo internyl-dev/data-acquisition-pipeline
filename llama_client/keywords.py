@@ -1,47 +1,37 @@
 
 kw_elegibility = [
-    'freshman', 'freshmen',
-    'sophomore', 'sophomores',
-    'junior', 'juniors',
-    'senior', 'seniors',
+    'freshman', 'sophomore', 'junior', 'senior',
     '9th', '10th', '11th', '12th',
-    'undergraduate', 'undergraduates',
+    'undergraduate',
     'eligible', 'eligibility',
-    'grade', 'grades'
+    'grade',
 ]
 
 kw_deadline = [
-    'deadline', 'deadlines',
+    'deadline',
     'by',
-    'date', 'dates',
+    'date',
     'due',
     'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
-    'day', 'days',
-    'week', 'weeks',
-    'month', 'months',
-    'year', 'years'
+    'day', 'week', 'month', 'year',
 ]
 
 kw_date = [
     'from', 'by', 'during', 'while',
-    'run', 'runs',
-    'date', 'dates',
+    'run',
+    'date',
     'session', 'sessions',
     'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
-    'day', 'days',
-    'week', 'weeks',
-    'month', 'months',
-    'year', 'years'
+    'day', 'week', 'month', 'year',
 ]
 
 kw_cost = [
-    'cost', 'costs',
-    'price', 'prices',
-    'stipend', 'stipends',
+    'cost',
+    'price',
+    'stipend',
     'free',
-    '$',
     'per',
-    'session', 'sessions'
+    'session',
 ]
 
 # still need more kw + need to support searching for all these keywords with truncate_html.py
