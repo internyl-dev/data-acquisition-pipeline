@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI
+from testenv.fastapi import FastAPI
 
 app = FastAPI()
 

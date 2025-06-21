@@ -95,10 +95,6 @@ Return in the following format:
 "cost": integer or string
 
 DO NOT WRITE CODE, FIND THE VALUES YOURSELF AND RETURN THEM
-
-Return in the format of the following examples:
-"cost": "Stipend $2500"
-"cost": "Stipend Available"
 """
 ]
 

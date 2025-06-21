@@ -1,12 +1,5 @@
 
-from bs4 import BeautifulSoup
-from funclib import read_html
 import re
-
-filepath = 'llama_client/test_context.html'
-
-html = read_html(filepath)
-soup = BeautifulSoup(html, features="html.parser")
 
 """
 truncont(cont, kw, area)
@@ -81,7 +74,3 @@ def truncont(cont, kw, area):
             pass
     
     return '\n'.join(fincont)
-
-from keywords import kw_cost
-
-print(truncont(soup, kw_cost, 1))

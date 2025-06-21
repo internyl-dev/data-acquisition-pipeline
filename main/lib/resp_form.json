@@ -6,7 +6,9 @@
         {
             "name": "str: <whatever the deadline is for>, or none",
             "priority": "str: high, medium, low, or none",
-            "date": "str: mm-dd-yyyy",
+            "date": "str: mm-dd-yyyy, or str: not provided",
+            "rolling_basis": "bool: true if: rolling basis, false if: not rolling basis",
+            "passed": "bool: true if: passed, false if: not passed",
             "time": "str: morning, noon, afternoon, evening, night, midnight, or str: hh:mm AM/PM, or str: not provided"
         }
     ],

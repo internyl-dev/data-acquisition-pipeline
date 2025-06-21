@@ -8,6 +8,6 @@ async def main():
         await page.goto("https://www.whatismybrowser.com/detect/what-is-my-user-agent/")
         html = await page.content()
         await browser.close()
-    print(html)
+    return html
 
-asyncio.run(main())
+print(asyncio.run(main()))
