@@ -2,15 +2,13 @@
 from lib.scrape_html import get_html
 import asyncio
 
-# Scrape HTML contents
-url = 'https://www.americaontech.org/fellowships.html'
-html = asyncio.run(get_html(url))
-
-
-
 from bs4 import BeautifulSoup
 import re
 import pyperclip
+
+# Scrape HTML contents
+url = 'https://www.americaontech.org/fellowships.html'
+html = asyncio.run(get_html(url))
 
 # Prime html contents for parsing with bs4
 soup = BeautifulSoup(html, features="html.parser")

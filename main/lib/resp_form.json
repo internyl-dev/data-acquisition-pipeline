@@ -32,7 +32,7 @@
       "name": "str: <whatever the deadline is for>, or none",
       "priority": "str: high, medium, low, or none",
       "date": "str: mm-dd-yyyy, or str: not provided",
-      "rolling_basis": "bool: true if: rolling basis, false if: not rolling basis",
+      "rolling_basis": "bool: true if: rolling basis, false if: not rolling basis or str: not provided",
       "time": "str: morning, noon, afternoon, evening, night, midnight, or str: hh:mm AM/PM, or str: not provided"
     }
   ],
@@ -56,7 +56,15 @@
     }
   ],
 
-  "cost": "float: <dollar amount of cost>, or str: free, or str: not provided",
+  "cost": [
+    {
+      "name": "str: <whatever the cost is for>, or none",
+      "free": "bool: true if: free, false if: costs money",
+      "lowest": "float: <dollar amount of lowest possible cost>, or str: if free: none, or str: not provided",
+      "highest": "float: <dollar amount of highest possible cost>, or str: if free: none, or str: not provided",
+      "scholarship-available": "bool: true if: scholarship available, false if: no scholarship available"
+    }
+  ],
 
   "stipend": {
     "available": "bool: true if: stipend is available, false if: stipend is not available",
