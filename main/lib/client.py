@@ -1,4 +1,9 @@
 
+def create_prompt(section):
+    return f"Return the '{section}' section in the correct format."
+
+
+
 import requests
 
 filepath = 'llama_client/test_context.html'
@@ -15,4 +20,3 @@ def ask_llama(prompt):
         }
         )
     return response
-    

@@ -24,8 +24,8 @@ keywords = {
     'kw_date' : [
         'from', 'by', 'during', 'while', 'until',
         'run', 'running',
-        'date', 'start', 'end', 'begin', 'beginning', 'ends', 'through',
-        'term', 'session', 'program dates', 'program duration',
+        'date', 'start', 'end', 'begin', 'beginning', 'through',
+        'term', 'session', 'program date', 'program duration',
         'starts on', 'ends on',
         'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
         'day', 'week', 'month', 'year'
@@ -35,13 +35,13 @@ keywords = {
         'cost', 'price', 'fee', 'tuition',
         'stipend', 'paid', 'payment', 'salary', 'pay',
         'financial aid', 'covered', 'free', 'no cost', 'at no cost',
-        'per', 'session', 'expenses', 'compensation',
+        'per', 'session', 'expense', 'compensation',
         'scholarship', 'grant', 'provided'
     ],
 
     'kw_location' : ['location', 'city', 'state', 'address', 'remote', 'virtual', 'in-person', 'on-site'],
 
-    'kw_requirements' : ['essay', 'recommendation', 'transcript', 'requirements', 'application materials', 'submit', 'document'],
+    'kw_requirements' : ['essay', 'recommendation', 'transcript', 'requirement', 'application material', 'submit', 'document'],
 
     'kw_tags' : ['research', 'mentorship', 'residential', 'leadership', 'career', 'innovation', 'intensive', 'bootcamp'],
 

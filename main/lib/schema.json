@@ -19,8 +19,7 @@
   },
 
   "eligibility": {
-    "rising": "bool: true if: accepting rising grades, false if: not accepting rising grades",
-    "grades": ["str: freshman, sophomore, junior, senior, undergraduate or str: not provided"],
+    "grades": ["str: freshman, (rising) sophomore, (rising) junior, (rising) senior, undergraduate or str: not provided"],
     "age": {
       "minimum": "int: <minimum age>, str: none, or str: not provided",
       "maximum": "int: <maximum age>, str: none, or str: not provided"
@@ -62,7 +61,7 @@
       "free": "bool: true if: free, false if: costs money",
       "lowest": "float: <dollar amount of lowest possible cost>, or str: if free: none, or str: not provided",
       "highest": "float: <dollar amount of highest possible cost>, or str: if free: none, or str: not provided",
-      "scholarship-available": "bool: true if: scholarship available, false if: no scholarship available"
+      "financial-aid-available": "bool: true if: scholarship available, false if: no scholarship available"
     }
   ],
 
