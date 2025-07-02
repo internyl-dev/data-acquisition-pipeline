@@ -1,20 +1,12 @@
 
-from lib.scrape_html import get_html
-import asyncio
-
-from bs4 import BeautifulSoup
-import re
 import pyperclip
+from main import scrape_html
+from main import parse_html
 
-# Scrape HTML contents
 url = 'https://www.nationalhistoryacademy.org/the-academy/rising-10th-12th-grade-students/overview/'
-html = asyncio.run(get_html(url))
+html = scrape_html(url)
 
-# Prime html contents for parsing with bs4
-soup = BeautifulSoup(html, features="html.parser")
-contents = soup.get_text().strip()
-contents = re.sub(r'\n\s*\n+', '\n', contents)
-#print(contents)
+contents = parse_html(html)
 pyperclip.copy(contents)
 
 filename = ';'.join(url.split('//')[1].split('/'))

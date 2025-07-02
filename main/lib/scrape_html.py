@@ -27,7 +27,7 @@ def is_link(s):
 
 
 
-"""
+""" truncont contract:
 truncont(cont, kw, area)
 cont = BeautifulSoup obj
 kw   = list

@@ -1,0 +1,165 @@
+{
+  "full": {
+    "title": "str: <title of internship/program>",
+    "provider": "str: <organization that hosts internship/program> or str: not provided",
+    "description": "str: <as many sentences as required to explain what the internship/program is about>",
+
+    "link": "str: information URL",
+
+    "subjects": ["str: <field of interest for internship> or str: not provided"],
+
+    "tags": [
+      "str: keyword tags such as research, mentorship, residential, etc."
+    ],
+
+    "requirements": {
+      "essay_required": "bool: true or false or str: not provided",
+      "recommendation_required": "bool: true or false or str: not provided",
+      "transcript_required": "bool: true or false or str: not provided",
+      "other": ["str: list of additional requirements or str: not provided"]
+    },
+
+    "eligibility": {
+      "grades": ["str: freshman, (rising) sophomore, (rising) junior, (rising) senior, undergraduate or str: not provided"],
+      "age": {
+        "minimum": "int: <minimum age>, str: none, or str: not provided",
+        "maximum": "int: <maximum age>, str: none, or str: not provided"
+      }
+    },
+
+    "deadlines": [
+      {
+        "name": "str: <whatever the deadline is for>, or none",
+        "priority": "str: high, medium, low, or none",
+        "date": "str: mm-dd-yyyy, or str: not provided",
+        "rolling_basis": "bool: true if: rolling basis, false if: not rolling basis or str: not provided",
+        "time": "str: morning, noon, afternoon, evening, night, midnight, or str: hh:mm AM/PM, or str: not provided"
+      }
+    ],
+
+    "dates": [
+      {
+        "term": "str: spring, summer, fall, winter, <other>, or str: not provided",
+        "start": "str: mm-dd-yyyy or str: not provided",
+        "end": "str: mm-dd-yyyy or str: not provided"
+      }
+    ],
+
+    "duration_weeks": "int: estimated program length in weeks, or str: not provided",
+
+    "location": [
+      {
+        "virtual": "bool: true if: virtual, false if: in-person",
+        "state": "str: <state (in the US) of location of program>, if virtual: str: none, if none are provided: str: not provided",
+        "city": "str: <city of location of program>, if virtual: str: none, if none are provided: str: not provided",
+        "address": "str: <address of location of program>, if virtual: str: none, if none are provided: str: not provided" 
+      }
+    ],
+
+    "cost": [
+      {
+        "name": "str: <whatever the cost is for>, or none",
+        "free": "bool: true if: free, false if: costs money",
+        "lowest": "float: <dollar amount of lowest possible cost>, or str: if free: none, or str: not provided",
+        "highest": "float: <dollar amount of highest possible cost>, or str: if free: none, or str: not provided",
+        "financial-aid-available": "bool: true if: scholarship available, false if: no scholarship available"
+      }
+    ],
+
+    "stipend": {
+      "available": "bool: true if: stipend is available, false if: stipend is not available",
+      "amount": "float: <dollar amount of stipend>, or str: not provided"
+    },
+
+    "contact": {
+      "email": "str: contact email or str: not provided",
+      "phone": "str: contact number or str: not provided"
+    }
+  },
+
+  "general-info": {
+    "title": "not provided",
+    "provider": "not provided",
+    "description": "not provided",
+
+    "link": "not provided",
+
+    "subject": [],
+
+    "tags": []
+  },
+
+  "eligibility": {
+    "requirements": {
+      "essay_required": "not provided",
+      "recommendation_required": "not provided",
+      "transcript_required": "not provided",
+      "other": []
+    },
+
+    "eligibility": {
+      "grades": ["not provided"],
+      "age": {
+        "minimum": "not provided",
+        "maximum": "not provided"
+      }
+    }
+  },
+
+  "dates": {
+    "deadlines": [
+      {
+        "name": "not provided",
+        "priority": "not provided",
+        "date": "not provided",
+        "rolling_basis": "not provided",
+        "time": "not provided"
+      }
+    ],
+
+    "dates": [
+      {
+        "term": "not provided",
+        "start": "not provided",
+        "end": "not provided"
+      }
+    ],
+
+    "duration_weeks": "not provided"
+  },
+
+  "location": {
+    "location": [
+      {
+        "virtual": "not provided",
+        "state": "not provided",
+        "city": "not provided",
+        "address": "not provided" 
+      }
+    ]
+  },
+
+  "cost": {
+    "cost": [
+      {
+        "name": "not provided",
+        "free": "not provided",
+        "lowest": "not provided",
+        "highest": "not provided",
+        "financial-aid-available": "not provided"
+      }
+    ],
+
+    "stipend": {
+      "available": "not provided",
+      "amount": "not provided"
+    }
+  },
+
+  "contact": {
+    "contact": {
+      "email": "str: contact email or str: not provided",
+      "phone": "str: contact number or str: not provided"
+    }
+  }
+}
