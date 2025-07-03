@@ -5,9 +5,7 @@
     "description": "not provided",
 
     "link": "not provided",
-
     "subject": [],
-
     "tags": []
   },
 
@@ -50,8 +48,8 @@
     "duration_weeks": "not provided"
   },
 
-  "location": {
-    "location": [
+  "locations": {
+    "locations": [
       {
         "virtual": "not provided",
         "state": "not provided",
@@ -61,8 +59,8 @@
     ]
   },
 
-  "cost": {
-    "cost": [
+  "costs": {
+    "costs": [
       {
         "name": "not provided",
         "free": "not provided",
@@ -80,8 +78,8 @@
 
   "contact": {
     "contact": {
-      "email": "str: contact email or str: not provided",
-      "phone": "str: contact number or str: not provided"
+      "email": "not provided",
+      "phone": "not provided"
     }
   }
 }

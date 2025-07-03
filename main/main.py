@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import re
 from lib.keywords import keywords
 from lib.client import ask_llama, create_prompt
+from lib.read_json import get_info_needed
 import json
 from pprint import pprint
 
@@ -45,7 +46,7 @@ class Main:
         self.queue = {}
         with open('main/lib/schemas.json', 'r', encoding='utf-8') as file:
             schema = json.load(file)
-            self.resp = schema['general-info'] | schema['eligibility'] | schema['dates'] | schema['location'] | schema['cost'] | schema['contact']
+            self.resp = schema['general-info'] | schema['eligibility'] | schema['dates'] | schema['locations'] | schema['costs'] | schema['contact']
 
     @staticmethod
     def scrape_html(url):
@@ -81,24 +82,6 @@ class Main:
         return resp
 
     @staticmethod
-    def get_info_needed(json):
-        req = []
-
-        eligibility = json['eligibility']
-        if 'not provided' in eligibility['grades'] and list(eligibility['age'].values()) == ['not provided', 'not provided']:
-            req.append('eligibility')
-
-        deadlines = json['deadlines']
-        if not any([deadline['name'] == 'Application Deadline' for deadline in deadlines]):
-            req.append('deadlines')
-        
-        cost = json['cost']
-        if any([plan['free'] == 'not provided' for plan in cost]):
-            req.append('cost')
-        
-        return req
-
-    @staticmethod
     def get_links(soup):
         new_links = {}
         links = soup.find_all('a')         # Gets all anchor elements
@@ -129,9 +112,9 @@ class Main:
     
     def run(self, url, depth=2):
         
-        # If URL was already scraped, end recursion
-        # If recursion was not ended, add url to history
+        # If URL was already scraped, remove from queue and end recursion
         if url in self.history:
+            self.queue.pop(url)
             print(f'''
                   #====================#
                   # ALREADY IN HISTORY #
@@ -141,7 +124,7 @@ class Main:
                   URL: {url}
                   ''')
             return
-        self.history.append(url)
+        self.history.append(url)  # If recursion was not ended, add url to history
 
         # If max depth was reached, end recursion
         if depth <= 0:
@@ -156,7 +139,7 @@ class Main:
             return
 
         # If all vital info was found, end recursion (this will end recursion for all other cases)
-        info_needed = self.get_info_needed(self.resp)
+        info_needed = get_info_needed(self.resp)
         if not info_needed:
             print(f'''
                   #=============================#
@@ -178,38 +161,59 @@ class Main:
         #pprint(contents)
 
         # Send AI a POST request asking to fill out schema chunks and update full schema
-        # Also remove url from self.queue
         if url in self.queue:
+            # Only sending requests based on self.queue.values() saves time
             for info in self.queue[url]:
-                context = self.truncate_contents(soup, contents, self.queue[info])
-                #self.resp.update(self.send_request(info, context))
-            self.queue.pop(url)
+                context = self.truncate_contents(soup, contents, info)
+                #self.resp.update(self.send_request(info, context))\
+            self.queue.pop(url) # Remove from self.queue
+
         else:
+            # The need to check for info as the first loop is redundant, modify later (not top priority)
             for info in info_needed:
                 context = self.truncate_contents(soup, contents, info)
                 #self.resp.update(self.send_request(info, context))
         
-        info_needed = self.get_info_needed(self.resp)
+        # Check what other information is needed after contents of current website was evaluated
+        info_needed = get_info_needed(self.resp)
         print('\n\n#'+'='*5 +'# ' + 'INFO NEEDED (1)' + ' #'+'='*5 +'#')
         pprint(info_needed)
 
+        # Get all links within HTML
         new_links = self.get_links(soup)
 
+        # Filter links based on if there are key words in the HREF (has possibility to miss vital links)
         for info in info_needed:
             filtered_links = self.filter_links(new_links, info)
+
             for link in filtered_links.values():
-                if link in self.queue:
-                    self.queue[link].append(info)
+                # If link is in history, ignore
+                if link in self.history:
+                    pass
+
+                # If link is already in queue, check if its values already have the info labels
+                elif link in self.queue:
+                    if not info in self.queue[link]:
+                        self.queue[link].append(info)
+
+                # Add link and assign its values with labels based off of what information can be found
                 else:
                     self.queue[link] = [info]
-            
-            print('\n#'+'='*3 +'# ' + info + ' #'+'='*3 +'#')
-            pprint(self.queue)
+        
+        print('\n\n#'+'='*5 +'# ' + 'QUEUE' + ' #'+'='*5 +'#')
+        for entry in self.queue:
+            print(entry, self.queue[entry])
 
-        # recurse here
+        # Recursion loop runs while there are still links in self.queue
+        while self.queue:
+            self.run(list(self.queue.keys())[0])
         
         return
+    
+    def collect_data(self, url, depth=2):
+        pass
+
             
 
 Instance = Main()
-Instance.run('https://www.nationalhistoryacademy.org/the-academy/rising-10th-12th-grade-students/overview/')
+Instance.run('https://www.apollotheater.org/education/technical-internship')
