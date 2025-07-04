@@ -47,6 +47,8 @@ class Main:
         with open('main/lib/schemas.json', 'r', encoding='utf-8') as file:
             schema = json.load(file)
             self.resp = schema['general-info'] | schema['eligibility'] | schema['dates'] | schema['locations'] | schema['costs'] | schema['contact']
+            file.close()
+            self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": ""}]}
 
     @staticmethod
     def scrape_html(url):
@@ -164,14 +166,25 @@ class Main:
         if url in self.queue:
             # Only sending requests based on self.queue.values() saves time
             for info in self.queue[url]:
-                context = self.truncate_contents(soup, contents, info)
+                # If info isn't general info, truncate if possible, else context is whole contents
+                if not info == 'general-info':
+                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                else:
+                    context = contents + f'\n\n{info}'
+
                 #self.resp.update(self.send_request(info, context))\
             self.queue.pop(url) # Remove from self.queue
 
         else:
             # The need to check for info as the first loop is redundant, modify later (not top priority)
             for info in info_needed:
-                context = self.truncate_contents(soup, contents, info)
+                # If info isn't general info, truncate if possible, else context is whole contents
+                if not info == 'general-info':
+                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                else:
+                    context = contents + f'\n\n{info}'
+
+                self.resp.update({'link': url})
                 #self.resp.update(self.send_request(info, context))
         
         # Check what other information is needed after contents of current website was evaluated
@@ -211,9 +224,80 @@ class Main:
         return
     
     def collect_data(self, url, depth=2):
-        pass
+
+        if url in self.history:
+            self.queue.pop(url)
+            return
+        self.history.append(url)
+
+        if depth <= 0:
+            return
+
+        info_needed = get_info_needed(self.resp)
+        if not info_needed:
+            return
+
+        html = self.scrape_html(url)
+        soup, contents = self.parse_html(html)
+
+        if url in self.queue:
+            for info in self.queue[url]:
+                if not info == 'general-info':
+                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                else:
+                    context = contents + f'\n\n{info}'
+
+                print(context+'\n\n\n\n')
+
+                data = self.data.copy()
+                data['messages'][0]['content'] = context
+
+                with open("main/data.jsonl", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(self.data) + "\n")
+                    f.close()
+            self.queue.pop(url)
+
+        else:
+            for info in info_needed:
+                if not info == 'general-info':
+                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                else:
+                    context = contents + f'\n\n{info}'
+
+                self.resp.update({'link': url})
+                print('\n\n'.join(context.split('\n'))+'\n\n\n\n')
+
+                data = self.data.copy()
+                data['messages'][0]['content'] = context
+
+                with open("main/data.jsonl", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(self.data) + "\n")
+                    f.close()
+        
+        info_needed = get_info_needed(self.resp)
+
+        new_links = self.get_links(soup)
+
+        for info in info_needed:
+            filtered_links = self.filter_links(new_links, info)
+
+            for link in filtered_links.values():
+                if link in self.history:
+                    pass
+
+                elif link in self.queue:
+                    if not info in self.queue[link]:
+                        self.queue[link].append(info)
+
+                else:
+                    self.queue[link] = [info]
+
+        while self.queue:
+            self.collect_data(list(self.queue.keys())[0])
+        
+        return
 
             
 
 Instance = Main()
-Instance.run('https://www.apollotheater.org/education/technical-internship')
+Instance.collect_data('https://www.nationalhistoryacademy.org/the-academy/rising-10th-12th-grade-students/overview/')
