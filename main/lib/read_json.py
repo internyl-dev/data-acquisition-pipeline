@@ -2,28 +2,28 @@
 def get_info_needed(json):
     req = []
 
-    # general-info
-    if json['provider'] == 'not provided' or not json['subject']:
-        req.append('general-info')
+    overview = json['overview']
+    if overview['provider'] == 'not provided' or not overview['subject']:
+        req.append('overview')
 
-    # eligibility
-    if 'not provided' in json['eligibility']['grades'] and list(json['eligibility']['age'].values()) == ['not provided', 'not provided']:
+    eligibility = json['eligibility']
+    if 'not provided' in eligibility['eligibility']['grades'] and list(eligibility['eligibility']['age'].values()) == ['not provided', 'not provided']:
         req.append('eligibility')
 
-    # dates
-    if not any([deadline['name'] == 'Application Deadline' for deadline in json['deadlines']]):
+    dates = json['dates']
+    if not any([deadline['name'] == 'Application Deadline' for deadline in dates['deadlines']]):
         req.append('dates')
 
-    # location
-    if any([site['virtual'] == 'not provided' for site in json['locations']]):
+    locations = json['locations']
+    if any([site['virtual'] == 'not provided' for site in locations['locations']]):
         req.append('locations')
     
-    # cost
-    if any([plan['free'] == 'not provided' for plan in json['costs']]):
+    costs = json['costs']
+    if any([plan['free'] == 'not provided' for plan in costs['costs']]):
         req.append('costs')
 
-    # contact
-    if list(json['contact'].values()) == ['not provided', 'not provided']:
+    contact = json['contact']
+    if list(contact['contact'].values()) == ['not provided', 'not provided']:
         req.append('contact')
 
     return req

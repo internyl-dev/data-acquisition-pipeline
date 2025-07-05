@@ -1,5 +1,5 @@
 
-from lib.scrape_html import get_html, truncont, is_link
+from lib.scrape_html import *
 import asyncio
 from bs4 import BeautifulSoup
 import re
@@ -44,11 +44,11 @@ class Main:
     def __init__(self):
         self.history = []
         self.queue = {}
+
         with open('main/lib/schemas.json', 'r', encoding='utf-8') as file:
-            schema = json.load(file)
-            self.resp = schema['general-info'] | schema['eligibility'] | schema['dates'] | schema['locations'] | schema['costs'] | schema['contact']
-            file.close()
-            self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": ""}]}
+            self.resp = json.load(file)
+        
+        self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": {}}]}
 
     @staticmethod
     def scrape_html(url):
@@ -72,8 +72,15 @@ class Main:
     @staticmethod
     def truncate_contents(soup, contents, info, word_limit=1500):
         # Using word count as a rough estimator for token count
-        if len(contents.split()) > word_limit:
-            return truncont(soup, keywords[info], 1)
+        if len(contents.split()) > word_limit and not info == 'overview':
+            if info == 'dates':
+                kws = keywords[info] + find_dates(contents)
+                return truncont(soup, kws, 1)
+            elif info == 'contact':
+                kws = keywords[info] + find_emails(contents) + find_phone_numbers(contents)
+                return truncont(soup, kws, 1)
+            else:
+                return truncont(soup, keywords[info], 1)
         else:
             return contents
 
@@ -112,6 +119,44 @@ class Main:
         
         return new_links
     
+    @staticmethod
+    def read_last_jsonl():
+        with open("main/data.jsonl", "rb") as f:
+            f.seek(0, 2)  # Go to end of file
+            pos = f.tell() - 1
+
+            while pos > 0:
+                f.seek(pos)
+                char = f.read(1)
+                if char == b"\n":
+                    # Read the next line after newline
+                    last_line = f.readline().decode("utf-8").strip()
+                    if last_line != '':
+                        return json.loads(last_line)
+                pos -= 1
+
+            # If we reach start of file, read from beginning (in case single line no newline)
+            f.seek(0)
+            last_line = f.readline().decode("utf-8").strip()
+            return json.loads(last_line)
+
+    def save_to_jsonl(self, context):
+        data = self.data.copy()
+        data['messages'][0]['content'] = context
+
+        with open("main/data.jsonl", "a+", encoding="utf-8") as file:
+            file.write(json.dumps(self.data) + "\n")
+            file.flush()
+
+            loops = 0
+
+            c = self.read_last_jsonl()
+            while not c['messages'][1]['content']:
+                loops += 1
+                time.sleep(1)
+                c = self.read_last_jsonl()
+                print('Read last line', loops, 'time(s)')
+
     def run(self, url, depth=2):
         
         # If URL was already scraped, remove from queue and end recursion
@@ -166,26 +211,18 @@ class Main:
         if url in self.queue:
             # Only sending requests based on self.queue.values() saves time
             for info in self.queue[url]:
-                # If info isn't general info, truncate if possible, else context is whole contents
-                if not info == 'general-info':
-                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                else:
-                    context = contents + f'\n\n{info}'
+                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
 
-                #self.resp.update(self.send_request(info, context))\
+                #self.resp[info].update(self.send_request(info, context)[info])
             self.queue.pop(url) # Remove from self.queue
 
         else:
             # The need to check for info as the first loop is redundant, modify later (not top priority)
             for info in info_needed:
-                # If info isn't general info, truncate if possible, else context is whole contents
-                if not info == 'general-info':
-                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                else:
-                    context = contents + f'\n\n{info}'
+                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
 
                 self.resp.update({'link': url})
-                #self.resp.update(self.send_request(info, context))
+                #self.resp[info].update(self.send_request(info, context)[info])
         
         # Check what other information is needed after contents of current website was evaluated
         info_needed = get_info_needed(self.resp)
@@ -225,6 +262,8 @@ class Main:
     
     def collect_data(self, url, depth=2):
 
+        # collect_data runs with the same logic as run but doesn't send requests, instead taking user input from the JSONL
+        # the difference can be found in the highlighted section of this code
         if url in self.history:
             self.queue.pop(url)
             return
@@ -240,41 +279,26 @@ class Main:
         html = self.scrape_html(url)
         soup, contents = self.parse_html(html)
 
+        #==============================================================================#
         if url in self.queue:
             for info in self.queue[url]:
-                if not info == 'general-info':
-                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                else:
-                    context = contents + f'\n\n{info}'
+                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                self.save_to_jsonl(context)
+                self.resp[info].update(self.read_last_jsonl()['messages'][1]['content'][info])
+                pprint(self.resp)
 
-                print(context+'\n\n\n\n')
-
-                data = self.data.copy()
-                data['messages'][0]['content'] = context
-
-                with open("main/data.jsonl", "a", encoding="utf-8") as f:
-                    f.write(json.dumps(self.data) + "\n")
-                    f.close()
             self.queue.pop(url)
 
         else:
             for info in info_needed:
-                if not info == 'general-info':
-                    context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                else:
-                    context = contents + f'\n\n{info}'
-
-                self.resp.update({'link': url})
-                print('\n\n'.join(context.split('\n'))+'\n\n\n\n')
-
-                data = self.data.copy()
-                data['messages'][0]['content'] = context
-
-                with open("main/data.jsonl", "a", encoding="utf-8") as f:
-                    f.write(json.dumps(self.data) + "\n")
-                    f.close()
+                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                self.save_to_jsonl(context)
+                self.resp[info].update(self.read_last_jsonl()['messages'][1]['content'][info])
+                pprint(self.resp)
+        #==============================================================================#
         
         info_needed = get_info_needed(self.resp)
+        print(info_needed)
 
         new_links = self.get_links(soup)
 

@@ -27,6 +27,20 @@ def is_link(s):
 
 
 
+def keyword_pattern(keyword):
+    if keyword.endswith('y'):
+        # 'opportunity' -> 'opportunities'
+        base = keyword[:-1]
+        return fr'\b({base}y|{base}ies)\b'
+    elif keyword.endswith(('s', 'x', 'z', 'ch', 'sh')):
+        # 'class' -> 'class', 'classes'
+        return fr'\b{keyword}(es)?\b'
+    else:
+        # default: add optional 's'
+        return fr'\b{keyword}(s)?\b'
+
+
+
 """ truncont contract:
 truncont(cont, kw, area)
 cont = BeautifulSoup obj
@@ -76,7 +90,7 @@ def truncont(cont, kw, area):
     for line in cont:
         for keyword in kw:
             # Non case-sensitive keyword can be followed by 1 s but not any other letter
-            if bool(re.search(re.compile(fr'{keyword}(?!([\s\S])[a-zA-Z])', re.I), line)):
+            if re.search(keyword_pattern(keyword), line, re.I):
                 lines.append(line)
 
     # Use dictionaries to prevent duplicates and maintain order
@@ -100,3 +114,44 @@ def truncont(cont, kw, area):
             pass
     
     return '\n'.join(fincont)
+
+def find_emails(contents):
+    return re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", contents, re.I)
+
+def find_phone_numbers(contents):
+    phone_pattern = re.compile(r'''
+        # Optional country code: +1, 1, or 1- or 1.
+        (?:\+?1[\s.-]?)?
+
+        # Area code: (123), 123, (123)-
+        (?:\(?\d{3}\)?[\s.-]?)
+
+        # First 3 digits
+        \d{3}
+
+        # Separator
+        [\s.-]?
+
+        # Last 4 digits
+        \d{4}
+
+        # Optional extension: ext, x, ext., extension followed by digits
+        (?:\s*(?:ext\.?|x|extension)\s*\d{2,5})?
+        ''', re.VERBOSE | re.I)
+    
+    return re.findall(phone_pattern, contents)
+
+def find_dates(contents):
+    date_pattern = re.compile(r"""
+    (?<!\d)                         # Negative lookbehind to avoid matching within a longer number
+    (                               # Start capturing group
+        (?:\d{1,4})                 # 1-4 digits (year or day or month)
+        [./-]                       # separator
+        (?:\d{1,2})                 # 1-2 digits
+        [./-]                       # separator
+        (?:\d{2,4})                 # 2-4 digits (year)
+    )
+    (?!\d)                          # Negative lookahead to avoid trailing digits
+    """, re.VERBOSE | re.I)
+
+    return re.findall(date_pattern, contents)

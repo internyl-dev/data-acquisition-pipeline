@@ -1,6 +1,6 @@
 
 keywords = {
-    'general-info': [
+    'overview': [
         'overview',
 
         'research', 'mentorship', 'residential', 'leadership', 'career', 'innovation', 'intensive', 'bootcamp'
@@ -11,34 +11,34 @@ keywords = {
 
         'freshman', 'sophomore', 'junior', 'senior',
         '9th', '10th', '11th', '12th',
+        'ninth', 'tenth', 'eleventh', 'twelth'
         'undergraduate', 'graduate', 'college student', 'high school student',
         'rising', 'currently enrolled', 'must be',
         'eligible', 'eligibility', 'open to',
-        'minimum age', 'maximum age', 'age requirement',
+        'age',
         'grade', 'school year', 'students in'
     ],
 
     'dates' : [
-        'deadline', 'due', 'apply by', 'application due',
-        'application deadline', 'applications close', 'application closes', 'final date',
-        'applications accepted until', 'submit by', 'closing date',
-        'priority deadline', 'early deadline',
-        'rolling deadline', 'rolling basis',
-        'last day', 'cutoff', 'close', 'closes',
+        'deadline', 'due', 'apply by',
+        'application',
+        'submit', 'date',
+        'rolling',
+        'last day', 'cutoff', 'close',
         'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
+        'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
+        'spring', 'summer', 'fall', 'winter',
         'day', 'week', 'month', 'year',
 
         'from', 'by', 'during', 'while', 'until',
         'run', 'running',
         'date', 'start', 'end', 'begin', 'beginning', 'through',
-        'term', 'session', 'program date', 'program duration',
-        'starts on', 'ends on',
-        'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
-        'day', 'week', 'month', 'year'
+        'term', 'session', 'duration',
+        'start', 'end',
     ],
 
     'locations' : [
-        'location', 'city', 'state', 'address', 'remote', 'virtual', 'in-person', 'on-site'
+        'location', 'city', 'state', 'address', 'remote', 'virtual', 'in-person', 'on-site, in person, place'
         "alabama", "alaska", "arizona", "arkansas", "california", "colorado",
         "connecticut", "delaware", "florida", "georgia", "hawaii", "idaho",
         "illinois", "indiana", "iowa", "kansas", "kentucky", "louisiana",
@@ -65,7 +65,7 @@ keywords = {
         'questions', 'inquiries', 'ask', 'more information',
         'support', 'help desk', 'customer service',
         'get in touch',
-        'mailto:', 'support@', 'help@'
+        'mailto:'
     ],
 
     'link' : {
