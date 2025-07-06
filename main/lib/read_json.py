@@ -11,7 +11,7 @@ def get_info_needed(json):
         req.append('eligibility')
 
     dates = json['dates']
-    if not any([deadline['name'] == 'Application Deadline' for deadline in dates['deadlines']]):
+    if any([deadline['date'] == 'not provided' for deadline in dates['deadlines']]):
         req.append('dates')
 
     locations = json['locations']

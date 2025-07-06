@@ -63,6 +63,16 @@ class Main:
         for tag in clean_soup.find_all(['nav', 'footer']):                # Remove nav and footer tags
             tag.decompose()
 
+        for element in ['header', 'footer']:
+            elm = soup.find(element)
+            if elm:
+                elm.decompose()
+        
+        for element in ['select', 'textarea', 'button', 'option']:
+            elements = soup.find_all(element)
+            for elm in elements:
+                elm.decompose()
+
         contents = clean_soup.get_text().strip()
         contents = re.sub(r'\n\s*\n+', '\n', contents)                    # Remove repeating new lines
         contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE) # Remove repeating spaces
@@ -113,11 +123,26 @@ class Main:
         for content in links:
             for keyword in keywords['link'][category]:
 
-                # If the keyword was found in the content, add it to the new dictionary
-                if bool(re.search(re.compile(fr'{keyword}', re.I), content)):
+                # If the keyword was found in the text or HREF, add it to the new dictionary
+                if re.search(fr'{keyword}', content, re.I) or re.search(fr'{keyword}', links[content], re.I):
                     new_links[content] = links[content]
         
         return new_links
+    
+    @staticmethod
+    def process_link(url, link):
+        if link[0] == '/':
+            link = '/'.join(url.split('/')[0:3]) + link
+
+        elif link[0:7] == 'http://' or link[0:8] == 'https://':
+            return link
+
+        elif link[-1] == '/':
+            if url[-1] == '/':
+                url = url[:-1]
+            link = url + link
+
+        return link
     
     @staticmethod
     def read_last_jsonl():
@@ -156,6 +181,8 @@ class Main:
                 time.sleep(1)
                 c = self.read_last_jsonl()
                 print('Read last line', loops, 'time(s)')
+        
+        return self.read_last_jsonl()['messages'][1]['content']
 
     def run(self, url, depth=2):
         
@@ -231,12 +258,18 @@ class Main:
 
         # Get all links within HTML
         new_links = self.get_links(soup)
+        print('\n\n#'+'='*5 +'# ' + 'UNFILTERED LINKS' + ' #'+'='*5 +'#')
+        pprint(new_links)
 
         # Filter links based on if there are key words in the HREF (has possibility to miss vital links)
         for info in info_needed:
             filtered_links = self.filter_links(new_links, info)
+            print('\n\n#'+'='*5 +'# ' + 'FILTERING LINKS' + ' #'+'='*5 +'#')
+            pprint(filtered_links)
 
             for link in filtered_links.values():
+                link = self.process_link(url, link)
+
                 # If link is in history, ignore
                 if link in self.history:
                     pass
@@ -255,7 +288,7 @@ class Main:
             print(entry, self.queue[entry])
 
         # Recursion loop runs while there are still links in self.queue
-        while self.queue:
+        while self.queue:   
             self.run(list(self.queue.keys())[0])
         
         return
@@ -273,6 +306,7 @@ class Main:
             return
 
         info_needed = get_info_needed(self.resp)
+        print(info_needed)
         if not info_needed:
             return
 
@@ -280,32 +314,44 @@ class Main:
         soup, contents = self.parse_html(html)
 
         #==============================================================================#
+        def create_data(soup, contents, info):
+                print(url)
+                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+                response = self.save_to_jsonl(context + '\n'
+                                              + self.resp['overview']['title'] + '\n'
+                                              + self.resp['overview']['provider'] + '\n'
+                                              + self.resp['overview']['description'] + '\n')
+                if response == {'unrelated_website': True}:
+                    return True
+                else:
+                    self.resp[info].update(response[info])
+                pprint(self.resp)
+
         if url in self.queue:
             for info in self.queue[url]:
-                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                self.save_to_jsonl(context)
-                self.resp[info].update(self.read_last_jsonl()['messages'][1]['content'][info])
-                pprint(self.resp)
+                if create_data(soup, contents, info):
+                    return
 
             self.queue.pop(url)
 
         else:
             for info in info_needed:
-                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                self.save_to_jsonl(context)
-                self.resp[info].update(self.read_last_jsonl()['messages'][1]['content'][info])
-                pprint(self.resp)
+                if create_data(soup, contents, info):
+                    return
         #==============================================================================#
         
         info_needed = get_info_needed(self.resp)
         print(info_needed)
 
         new_links = self.get_links(soup)
+        pprint(new_links)
 
         for info in info_needed:
             filtered_links = self.filter_links(new_links, info)
 
             for link in filtered_links.values():
+                link = self.process_link(url, link)
+
                 if link in self.history:
                     pass
 
@@ -315,6 +361,8 @@ class Main:
 
                 else:
                     self.queue[link] = [info]
+        
+        pprint(self.queue)
 
         while self.queue:
             self.collect_data(list(self.queue.keys())[0])

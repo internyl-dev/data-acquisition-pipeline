@@ -31,6 +31,7 @@
       {
         "name": "not provided",
         "priority": "not provided",
+        "term": "not provided",
         "date": "not provided",
         "rolling_basis": "not provided",
         "time": "not provided"

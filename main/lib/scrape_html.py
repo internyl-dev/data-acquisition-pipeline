@@ -17,10 +17,15 @@ import re
 
 def is_link(s):
     pattern = re.compile(
-        r'^(https?://)?' # optional http:// or https://
-        r'([\w.-]+)\.' # domain name prefix
-        r'([a-zA-Z]{2,})' # top-level domain
-        r'(/[^\s]*)?$', # optional path
+        r'^('
+        r'https?://[\w.-]+\.[a-zA-Z]{2,}(/[^\s]*)?'  # full URL
+        r'|'
+        r'//[\w.-]+\.[a-zA-Z]{2,}(/[^\s]*)?'         # scheme-relative
+        r'|'
+        r'/[^\s]*'                                   # relative path
+        r'|'
+        r'[\w.-]+\.[a-zA-Z]{2,}(/[^\s]*)?'           # bare domain
+        r')$',
         re.IGNORECASE
     )
     return bool(pattern.match(s))
@@ -40,6 +45,8 @@ def keyword_pattern(keyword):
         return fr'\b{keyword}(s)?\b'
 
 
+
+from bs4 import BeautifulSoup
 
 """ truncont contract:
 truncont(cont, kw, area)
@@ -82,7 +89,8 @@ Explanation:
 def truncont(cont, kw, area):
 
     # Extracts content from BeautifulSoup object and splits into individual lines
-    cont = cont.get_text().split('\n')
+    if isinstance(cont, BeautifulSoup):
+        cont = cont.get_text().split('\n')
     cont = list(filter(None, cont)) # After splitting, '' may appear. This removes that.
 
     # Find all lines where keyword in kw appears
