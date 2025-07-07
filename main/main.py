@@ -25,8 +25,7 @@ class Main:
         self.DATA_FILE_PATH = 'main/data.jsonl'
 
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
-            self.schema = json.load(file)
-            self.response = self.schema.copy()
+            self.response = json.load(file)
         
         self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": {}}]}
         self.prompt = ''.join("""
@@ -36,6 +35,7 @@ class Main:
         - "not provided" for strings or categories
         - null for numbers or amounts when stipend or cost is not available
         3. For `dates.deadlines`:
+        - Write dates as mm-dd-yyyy
         - Include multiple deadlines if they are for different purposes (e.g., financial aid, housing).
         - Use `"priority": "high"` only for application deadlines.
         - If no exact date is mentioned, still include the deadline object but with `"date": "not provided"`.
@@ -43,7 +43,7 @@ class Main:
         - Only infer end months if duration is greater than 5 weeks (e.g., 6+ weeks or 60+ days = +2 months).
         5. `duration_weeks` should be numeric if stated (e.g., "four-week" = 4). Use "not provided" otherwise.
         6. In `eligibility`:
-        - Fill in `grades` using exact grade references (e.g., "rising 11th and 12th graders" → ["11", "12"])
+        - Fill in `grades` using exact grade references (e.g., "rising 11th and 12th graders" → ["Rising Junior", "Rising Senior"])
         - If age is not stated, set `"age": "not provided"`
         - Do not infer age from grade level.
         7. In `costs` and `stipend`:
@@ -180,7 +180,7 @@ class Main:
         return (
             self.prompt
             + '\n\nEXTRACT THE CONTENTS FOR THE FOLLOWING INFORMATION: '
-            + str(self.schema[required_info])
+            + str({required_info: self.response[required_info]})
             + '\n\nTARGET INTERNSHIP INFORMATION: '
             + self.response['overview']['title'] + '\n'
             + self.response['overview']['provider'] + '\n'
@@ -369,8 +369,10 @@ class Main:
 
 
         html_contents = self.scrape_html(url)
-        html_contents = BeautifulSoup(html_contents, features='html.parser') # Save aside html_contents for get_all_links
-        soup = self.declutter_html(html_contents)
+        raw_soup = BeautifulSoup(html_contents, features='html.parser') # Save aside html_contents for get_all_links
+
+        soup = BeautifulSoup(html_contents, features='html.parser')
+        soup = self.declutter_html(soup)
         contents = self.clean_whitespace(soup)
         
         if self.collect_data:
@@ -407,10 +409,11 @@ class Main:
                 #self.response[required_info].update(self.send_request(info, context)[info])
                 self.response.update({'link': url})
         
-
+        pprint(self.response)
         
         all_required_info = get_required_info(self.response)
-        all_links = self.get_all_links(html_contents)
+        all_links = self.get_all_links(raw_soup)
+        pprint(all_links)
 
         for required_info in all_required_info:
             filtered_links = self.filter_links(all_links, required_info)
@@ -430,6 +433,8 @@ class Main:
                 else:
                     self.queue[link] = [required_info]
 
+        pprint(self.queue)
+
         while self.queue:
             self.run(list(self.queue.keys())[0])
         
@@ -438,4 +443,4 @@ class Main:
 
 
 Instance = Main(log_mode = True, collect_data=True)
-Instance.run('https://www.nationalhistoryacademy.org/the-academy/rising-10th-12th-grade-students/overview/')
+Instance.run('https://www.apollotheater.org/education/technical-internship')

@@ -11,7 +11,10 @@ def get_required_info(json):
         required_info.append('eligibility')
 
     dates = json['dates']
-    if any([deadline['date'] == 'not provided' for deadline in dates['deadlines']]):
+    if (
+        any([deadline['date'] == 'not provided' and deadline['rolling_basis'] != True for deadline in dates['deadlines']]) or
+        not any([deadline['priority'] == 'high' for deadline in dates['deadlines']])
+        ):
         required_info.append('dates')
 
     locations = json['locations']

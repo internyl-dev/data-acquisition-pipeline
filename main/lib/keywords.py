@@ -24,7 +24,7 @@ keywords = {
         'application',
         'submit', 'date',
         'rolling',
-        'last day', 'cutoff', 'close',
+        'cutoff', 'close',
         'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
         'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
         'spring', 'summer', 'fall', 'winter',
@@ -38,7 +38,8 @@ keywords = {
     ],
 
     'locations' : [
-        'location', 'city', 'state', 'address', 'remote', 'virtual', 'in-person', 'on-site, in person, place'
+        'location', 'city', 'state', 'address', 
+        'remote', 'virtual', 'in-person', 'on-site, in person, place', 'online',
         "alabama", "alaska", "arizona", "arkansas", "california", "colorado",
         "connecticut", "delaware", "florida", "georgia", "hawaii", "idaho",
         "illinois", "indiana", "iowa", "kansas", "kentucky", "louisiana",
@@ -75,24 +76,28 @@ keywords = {
 
         'eligibility': [
             'eligibility', 'apply', 'requirements', 'eligible',
-            'admission', 'criteria', 'qualifications',
-            'qualifies', 'selection', 'info'
+            'admission', 'criteria', 'qualification',
+            'qualify', 'selection', 'info',
+            'faq', 'frequently asked questions'
         ],
 
         'dates': [
             'deadline', 'apply', 'date', 'timeline',
             'schedule', 'calendar',
-            'round', 'cutoff'
+            'round', 'cutoff',
+            'faq', 'frequently asked questions'
         ],
 
         'locations': [
-            'locations', 'address', 'campus'
+            'locations', 'address', 'campus',
+            'faq', 'frequently asked questions'
         ],
 
         'costs': [
             'cost', 'tuition', 'fee', 'expenses', 'financial', 'price', 'payment',
             'scholarship', 'funding', 'free', 'stipend',
-            'affordability', 'support', 'aid', 'grant'
+            'affordability', 'support', 'aid', 'grant',
+            'faq', 'frequently asked questions'
         ],
 
         'contact': [
