@@ -4,8 +4,8 @@ import asyncio
 from bs4 import BeautifulSoup
 import re
 from lib.keywords import keywords
-from lib.client import ask_llama, create_prompt
-from lib.read_json import get_info_needed
+from lib.client import ask_llama
+from lib.read_json import get_required_info
 import json
 from pprint import pprint
 
@@ -18,134 +18,272 @@ def stopwatch(func):
         return result
     return wrapper
 
-# scrape_html(url)
-# parse_html(html)
-# truncate_contents(soup, contents, word_count)
-# send_request(prompt, context)
-# get_info_needed(resp)
-# get_links(soup)
-# filter_links(links, category)
-
-# Starting from webpage 1:
-# 1. scrape
-# 2. parse
-# 3. truncate
-# 4. send request
-# -> global resp
-# -> add previous JSON for context if needed
-# 5. check info needed
-# -> info needed: go to step 6
-# -> info not needed: end
-# 6. get links
-# 7. filter links for info in info needed
-# 8. for link in links, repeat from step 1 minus one recursion
-
 class Main:
-    def __init__(self):
+    def __init__(self, log_mode:bool=False, collect_data:bool=False):
+
+        SCHEMA_FILE_PATH = 'main/lib/schemas.json'
+        self.DATA_FILE_PATH = 'main/data.jsonl'
+
+        with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
+            self.schema = json.load(file)
+            self.response = self.schema.copy()
+        
+        self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": {}}]}
+        self.prompt = ''.join("""
+        Extract structured information from the provided text using the standardized schema below. Only use the information available in the given text—do not infer or assume details not explicitly stated. Follow these formatting and logic rules strictly:
+        1. Output must follow the exact schema and field structure shown below.
+        2. If a field is missing or not clearly provided in the text, use:
+        - "not provided" for strings or categories
+        - null for numbers or amounts when stipend or cost is not available
+        3. For `dates.deadlines`:
+        - Include multiple deadlines if they are for different purposes (e.g., financial aid, housing).
+        - Use `"priority": "high"` only for application deadlines.
+        - If no exact date is mentioned, still include the deadline object but with `"date": "not provided"`.
+        4. For `dates.dates`, include term names (Fall, Spring, Summer), start and end dates only if both are clearly stated.
+        - Only infer end months if duration is greater than 5 weeks (e.g., 6+ weeks or 60+ days = +2 months).
+        5. `duration_weeks` should be numeric if stated (e.g., "four-week" = 4). Use "not provided" otherwise.
+        6. In `eligibility`:
+        - Fill in `grades` using exact grade references (e.g., "rising 11th and 12th graders" → ["11", "12"])
+        - If age is not stated, set `"age": "not provided"`
+        - Do not infer age from grade level.
+        7. In `costs` and `stipend`:
+        - If "free" is mentioned, set `"free": true` and both `"lowest"` and `"highest"` to null.
+        - If no stipend is mentioned, `"available": false` and `"amount": null`.
+        8. `locations.locations` must only include main residential sites—not travel locations or visit destinations.
+        9. `contact` fields must be "not provided" if not in the current input (even if they exist on other pages).
+        10. Use a flat list for `tags` (e.g., ["history", "residential"]).
+        11. Do not invent or fill in based on prior knowledge. Only extract from the current content.
+        """.split('        '))
+
         self.history = []
         self.queue = {}
 
-        with open('main/lib/schemas.json', 'r', encoding='utf-8') as file:
-            self.resp = json.load(file)
+        self.log_mode = log_mode
+        self.collect_data = collect_data
+
+    @staticmethod
+    def scrape_html(url:str):
+        """
+        Sends URL to Playwright to extract HTML contents.
+
+        Args:
+            url (str): URL to target website
         
-        self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": {}}]}
+        Returns:
+            html_contents (str): The contents of the HTML of the target website
+        """
+        html_contents = asyncio.run(get_html(url))
+        return html_contents
 
     @staticmethod
-    def scrape_html(url):
-        html = asyncio.run(get_html(url))
-        return html
+    def declutter_html(soup:BeautifulSoup):
+        """
+        Removes all HTML elements from BeautifulSoup object that would clutter the page contents.
 
-    @staticmethod
-    def parse_html(html):
-        soup = BeautifulSoup(html, features="html.parser")                # Create bs4 object for external use
-        clean_soup = BeautifulSoup(html, features="html.parser")          # Create bs4 object for cleaning
+        Args:
+            soup (BeautifulSoup): Contains the HTML contents of the page
 
-        for tag in clean_soup.find_all(['nav', 'footer']):                # Remove nav and footer tags
-            tag.decompose()
+        Returns:
+            soup (BeautifulSoup): HTML contents with cluttering elements removed
+        """
 
-        for element in ['header', 'footer']:
-            elm = soup.find(element)
-            if elm:
+        # headers, navs, and footers typically contain links to other parts of the website
+        # L> Excessively clutter context, especially when truncating for keywords
+        for element in ['header', 'nav', 'footer']:
+            elements = soup.find_all(element)  
+            for elm in elements:
                 elm.decompose()
         
+        # These are all common form elements that can have text
+        # Often contain tens of options that just clutter context
         for element in ['select', 'textarea', 'button', 'option']:
             elements = soup.find_all(element)
             for elm in elements:
                 elm.decompose()
-
-        contents = clean_soup.get_text().strip()
-        contents = re.sub(r'\n\s*\n+', '\n', contents)                    # Remove repeating new lines
-        contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE) # Remove repeating spaces
         
-        return soup, contents
+        return soup
+    
+    @staticmethod
+    def clean_whitespace(soup:BeautifulSoup):
+        """
+        Converts a BeautifulSoup object to a string while also removing excessive white space from the string.
+
+        Args:
+            soup (BeautifulSoup): Contains the HTML contents of the page
+        
+        Returns:
+            contents (str): Webpage contents as a string without excessive white space.
+        """
+
+        # Remove excessive white space
+        contents = soup.get_text().strip()
+        contents = re.sub(r'\n\s*\n+', '\n', contents)
+        contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE)
+
+        return contents
 
     @staticmethod
-    def truncate_contents(soup, contents, info, word_limit=1500):
-        # Using word count as a rough estimator for token count
-        if len(contents.split()) > word_limit and not info == 'overview':
-            if info == 'dates':
-                kws = keywords[info] + find_dates(contents)
-                return truncont(soup, kws, 1)
-            elif info == 'contact':
-                kws = keywords[info] + find_emails(contents) + find_phone_numbers(contents)
-                return truncont(soup, kws, 1)
-            else:
-                return truncont(soup, keywords[info], 1)
-        else:
+    def truncate_contents(contents:str, required_info:str, word_limit:int=1500): # Using word count as a rough estimator for token count
+        """
+        Truncates any string separated by new lines 
+        and returns only the lines near to and containing keywords based off of the info required.
+
+        Args:
+            contents (str): Contains the contents of the webpage
+            info_required (str): Any valid required info section (overview, eligibility, dates, locations, costs, contact)
+            word_limit (int, optional): Automatically set to 1500, the word limit for the string to start truncating
+
+        Returns:
+            value (str): Truncated contents of the webpage
+        """
+
+        # If the length of the contents is less than the word limit:
+        # L> Return the full contents because the model can handle the relatively smaller word count
+        # If the required info is overview:
+        # L> Return the full contents if the required info is 'overview so that the model can make a general description
+        if len(contents.split()) < word_limit or required_info == 'overview':
             return contents
 
-    @staticmethod
-    def send_request(prompt, context):
-        req = create_prompt(prompt)
-        resp = ask_llama(context + '\n\n' + req).json()['choices'][0]['message']['content']
-        return resp
+        # Truncate for dates as well as keywords if required info is 'dates'
+        if required_info == 'dates':
+            keywrds = (keywords[required_info] 
+                        + find_dates(contents))
+        
+        # Truncate for emails and phone numbers as well as keywords if required info is 'contact'
+        elif required_info == 'contact':
+            keywrds = (keywords[required_info] 
+                        + find_emails(contents) 
+                        + find_phone_numbers(contents))
+            
+        # Or simply truncate for keywords associated with the required info
+        else:
+            keywrds = keywords[required_info]
+
+        return truncont(contents, keywrds, 1)
+
+    def create_context(self, contents:BeautifulSoup|str, required_info:str):
+        """
+        Creates the context for the language model to extract necessary info from.
+
+        Args:
+            contents (BeautifulSoup | str): Contains the contents of the webpage
+            required_info (str): Any valid required info section (overview, eligibility, dates, locations, costs, contact)
+        
+        Returns:
+            value (str): Truncated contents of the webpage and a portion of the 'overview' schema 
+            including the required info that the model needs to scrape
+        """
+        # Create the context for the language model
+        # Includes the information about the target internship
+        # L> Helps model determine if the web page is the same internship
+        # Include target information needed for extraction
+        return (
+            self.prompt
+            + '\n\nEXTRACT THE CONTENTS FOR THE FOLLOWING INFORMATION: '
+            + str(self.schema[required_info])
+            + '\n\nTARGET INTERNSHIP INFORMATION: '
+            + self.response['overview']['title'] + '\n'
+            + self.response['overview']['provider'] + '\n'
+            + self.response['overview']['description'] + '\n\n'
+            + self.truncate_contents(contents, required_info)
+            )
 
     @staticmethod
-    def get_links(soup):
+    def send_request(context:str):
+        """
+        Sends POST request with prompt attached to server that is hosting the model.
+
+        Args:
+            context (str): Prompt and content of webpage
+        
+        Returns:
+            response (str): Response from model
+        """
+        response = ask_llama(context).json()['choices'][0]['message']['content']
+        return response
+
+    @staticmethod
+    def get_all_links(soup:BeautifulSoup):
+        """
+        Finds all anchor elements from within some HTML contents and returns their content and HREFs if they are valid links.
+
+        Args:
+            soup (BeautifulSoup): Contains the HTML contents of the page
+
+        Returns:
+            new_links (dict): The contents of anchor elements that have valid links as HREFs 
+            with the keys as the content from the original anchor element
+        """
         new_links = {}
-        links = soup.find_all('a')         # Gets all anchor elements
+        links = soup.find_all('a')
 
         for link in links:
             url = link.get('href')
-            text = link.get_text().strip() # Remove repeating indents and spaces
+            text = link.get_text().strip()
 
             try:
-                if is_link(url):           # Finds out if the href is a valid link or not
+                # Add link to dictionary with the associated text being the key
+                # L> For future filtering based off of keywords
+                if is_link(url):
                     new_links[text] = url
-            except Exception: 
-                pass
+
+            except Exception: continue
 
         return new_links
 
     @staticmethod
-    def filter_links(links, category):
-        new_links = {}
+    def filter_links(links:dict, required_info:str):
+        """
+        Filters all anchor elements based on their content and URL with keywords corresponding to the required info.
+
+        Args:
+            links (dict): The contents of anchor elements that have valid links as HREFs with the keys as the content from the original anchor element
+            required_info (str): Any valid required info section (overview, eligibility, dates, locations, costs, contact)
+
+        Returns:
+            filtered_links (dict): Only the links that contain the relevant keywords in either their content or url
+        """
+        filtered_links = {}
         for content in links:
-            for keyword in keywords['link'][category]:
+            for keyword in keywords['link'][required_info]:
 
                 # If the keyword was found in the text or HREF, add it to the new dictionary
                 if re.search(fr'{keyword}', content, re.I) or re.search(fr'{keyword}', links[content], re.I):
-                    new_links[content] = links[content]
+                    filtered_links[content] = links[content]
         
-        return new_links
+        return filtered_links
     
     @staticmethod
-    def process_link(url, link):
+    def process_link(url:str, link:str):
+        """
+        Takes the contents of any HREF assuming that the HREF is an absolute or relative path to a webpage and turns it in an absolute link.
+
+        Args:
+            url (str): Absolute webpage URL from which any relative links will be joined with
+            link (str): Absolute or relative URL
+
+        Returns:
+            value (str): Either the absolute URL result from joining a given absolute URL and relative URL or just the newly given absolute URL.
+        """
         if link[0] == '/':
-            link = '/'.join(url.split('/')[0:3]) + link
+            return '/'.join(url.split('/')[0:3]) + link
 
         elif link[0:7] == 'http://' or link[0:8] == 'https://':
             return link
 
         elif link[-1] == '/':
-            if url[-1] == '/':
-                url = url[:-1]
-            link = url + link
+            if not url[-1] == '/':
+                url += '/'
+            return url + link
 
-        return link
-    
     @staticmethod
     def read_last_jsonl():
+        """
+        Reads last line in a JSONL file using byte reading.
+
+        Returns:
+            value (dict): The parsed JSON content
+        """
         with open("main/data.jsonl", "rb") as f:
             f.seek(0, 2)  # Go to end of file
             pos = f.tell() - 1
@@ -165,11 +303,21 @@ class Main:
             last_line = f.readline().decode("utf-8").strip()
             return json.loads(last_line)
 
-    def save_to_jsonl(self, context):
+    def save_to_jsonl(self, context:str):
+        """
+        Dumps the prompt and context into the JSONL file 
+        and waits until the user has inputted content in the form of the ideal model response.
+
+        Args:
+            context (str): The prompt and context to give to the model
+        
+        Returns:
+            value (dict): The user-inputted ideal response
+        """
         data = self.data.copy()
         data['messages'][0]['content'] = context
 
-        with open("main/data.jsonl", "a+", encoding="utf-8") as file:
+        with open(self.DATA_FILE_PATH, "a+", encoding="utf-8") as file:
             file.write(json.dumps(self.data) + "\n")
             file.flush()
 
@@ -183,193 +331,111 @@ class Main:
                 print('Read last line', loops, 'time(s)')
         
         return self.read_last_jsonl()['messages'][1]['content']
+    
+    def create_data(self, context:str, required_info:str):
+        """
+        Dumps the data JSON schema with context into JSONL file, waits for user input, and reads the response.
 
-    def run(self, url, depth=2):
+        Args:
+            context (str): 
+
+        Returns:
+            value (bool): Returns True if the response is "{'unrelated_website': True}"
+        """
+        response = self.save_to_jsonl(context)
         
-        # If URL was already scraped, remove from queue and end recursion
+        if response == {'unrelated_website': True}:
+            return True
+            
+        self.response[required_info].update(response[required_info])
+
+    def run(self, url:str, depth:int=2):
+
+        # GUARD CLAUSES
         if url in self.history:
+            # URL already in history: remove it from queue and return to avoid duplicate extraction
             self.queue.pop(url)
-            print(f'''
-                  #====================#
-                  # ALREADY IN HISTORY #
-                  #====================#
-                  Final depth: {depth}
-                  History: {self.history}
-                  URL: {url}
-                  ''')
             return
-        self.history.append(url)  # If recursion was not ended, add url to history
-
-        # If max depth was reached, end recursion
-        if depth <= 0:
-            print(f'''
-                  #===============================#
-                  # MAX RECURSION REACHED: ENDING #
-                  #===============================#
-                  Final depth: {depth}
-                  History: {self.history}
-                  URL: {url}
-                  ''')
-            return
-
-        # If all vital info was found, end recursion (this will end recursion for all other cases)
-        info_needed = get_info_needed(self.resp)
-        if not info_needed:
-            print(f'''
-                  #=============================#
-                  # NO MORE INFO NEEDED: ENDING #
-                  #=============================#
-                  Final depth: {depth}
-                  History: {self.history}
-                  URL: {url}
-                  ''')
-            return
-        
-        #print('\n\n#'+'='*5 +'# ' + 'INFO NEEDED (0)' + ' #'+'='*5 +'#')
-        #pprint(info_needed)
-
-        # Scrape HTML from URL
-        html = self.scrape_html(url)
-        soup, contents = self.parse_html(html)
-        #print('\n\n#'+'='*5 +'# ' + 'CONTENTS' + ' #'+'='*5 +'#')
-        #pprint(contents)
-
-        # Send AI a POST request asking to fill out schema chunks and update full schema
-        if url in self.queue:
-            # Only sending requests based on self.queue.values() saves time
-            for info in self.queue[url]:
-                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-
-                #self.resp[info].update(self.send_request(info, context)[info])
-            self.queue.pop(url) # Remove from self.queue
-
         else:
-            # The need to check for info as the first loop is redundant, modify later (not top priority)
-            for info in info_needed:
-                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
+            self.history.append(url)
 
-                self.resp.update({'link': url})
-                #self.resp[info].update(self.send_request(info, context)[info])
+        if depth <= 0:
+            return
         
-        # Check what other information is needed after contents of current website was evaluated
-        info_needed = get_info_needed(self.resp)
-        print('\n\n#'+'='*5 +'# ' + 'INFO NEEDED (1)' + ' #'+'='*5 +'#')
-        pprint(info_needed)
+        if not (all_required_info := get_required_info(self.response)):
+            # All information already recieved, return to avoid unecessary extraction
+            return
 
-        # Get all links within HTML
-        new_links = self.get_links(soup)
-        print('\n\n#'+'='*5 +'# ' + 'UNFILTERED LINKS' + ' #'+'='*5 +'#')
-        pprint(new_links)
 
-        # Filter links based on if there are key words in the HREF (has possibility to miss vital links)
-        for info in info_needed:
-            filtered_links = self.filter_links(new_links, info)
-            print('\n\n#'+'='*5 +'# ' + 'FILTERING LINKS' + ' #'+'='*5 +'#')
-            pprint(filtered_links)
+
+        html_contents = self.scrape_html(url)
+        html_contents = BeautifulSoup(html_contents, features='html.parser') # Save aside html_contents for get_all_links
+        soup = self.declutter_html(html_contents)
+        contents = self.clean_whitespace(soup)
+        
+        if self.collect_data:
+
+            # Data collection mode:
+            # L> Will append all scraped context to DATA_FILE_PATH
+            # L> Up to user to input extracted information
+            # L> Used for data collection for fine-tuning
+            if url in self.queue: # Avoid key error
+                all_required_info = self.queue[url]
+                self.queue.pop(url)
+            
+            for required_info in all_required_info:
+                context = self.create_context(contents, required_info)
+
+                if self.create_data(context, required_info):
+                    # create_data returns True if the assistant content is "{'unrelated_website': True}"
+                    # L> Means that the website that the content was extracted from
+                    #    did not include information about the target internship
+                    return
+
+        else:     
+
+            # Data collection mode off:
+            # L> Just sends request to presumably fine-tuned model
+            if url in self.queue:
+                all_required_info = self.queue[url]
+                self.queue.pop(url)
+
+            for required_info in all_required_info:
+                context = self.create_context(contents, required_info)
+
+                # Send AI a POST request asking to fill out schema chunks and update full schema
+                #self.response[required_info].update(self.send_request(info, context)[info])
+                self.response.update({'link': url})
+        
+
+        
+        all_required_info = get_required_info(self.response)
+        all_links = self.get_all_links(html_contents)
+
+        for required_info in all_required_info:
+            filtered_links = self.filter_links(all_links, required_info)
 
             for link in filtered_links.values():
                 link = self.process_link(url, link)
 
-                # If link is in history, ignore
+                # Skip links we've already visited
                 if link in self.history:
-                    pass
+                    continue
 
-                # If link is already in queue, check if its values already have the info labels
+                # Add info if it was not there already
                 elif link in self.queue:
-                    if not info in self.queue[link]:
-                        self.queue[link].append(info)
+                    if required_info not in self.queue[link]:
+                        self.queue[link].append(required_info)
 
-                # Add link and assign its values with labels based off of what information can be found
                 else:
-                    self.queue[link] = [info]
-        
-        print('\n\n#'+'='*5 +'# ' + 'QUEUE' + ' #'+'='*5 +'#')
-        for entry in self.queue:
-            print(entry, self.queue[entry])
+                    self.queue[link] = [required_info]
 
-        # Recursion loop runs while there are still links in self.queue
-        while self.queue:   
+        while self.queue:
             self.run(list(self.queue.keys())[0])
         
         return
-    
-    def collect_data(self, url, depth=2):
 
-        # collect_data runs with the same logic as run but doesn't send requests, instead taking user input from the JSONL
-        # the difference can be found in the highlighted section of this code
-        if url in self.history:
-            self.queue.pop(url)
-            return
-        self.history.append(url)
 
-        if depth <= 0:
-            return
 
-        info_needed = get_info_needed(self.resp)
-        print(info_needed)
-        if not info_needed:
-            return
-
-        html = self.scrape_html(url)
-        soup, contents = self.parse_html(html)
-
-        #==============================================================================#
-        def create_data(soup, contents, info):
-                print(url)
-                context = self.truncate_contents(soup, contents, info) + f'\n\n{info}'
-                response = self.save_to_jsonl(context + '\n'
-                                              + self.resp['overview']['title'] + '\n'
-                                              + self.resp['overview']['provider'] + '\n'
-                                              + self.resp['overview']['description'] + '\n')
-                if response == {'unrelated_website': True}:
-                    return True
-                else:
-                    self.resp[info].update(response[info])
-                pprint(self.resp)
-
-        if url in self.queue:
-            for info in self.queue[url]:
-                if create_data(soup, contents, info):
-                    return
-
-            self.queue.pop(url)
-
-        else:
-            for info in info_needed:
-                if create_data(soup, contents, info):
-                    return
-        #==============================================================================#
-        
-        info_needed = get_info_needed(self.resp)
-        print(info_needed)
-
-        new_links = self.get_links(soup)
-        pprint(new_links)
-
-        for info in info_needed:
-            filtered_links = self.filter_links(new_links, info)
-
-            for link in filtered_links.values():
-                link = self.process_link(url, link)
-
-                if link in self.history:
-                    pass
-
-                elif link in self.queue:
-                    if not info in self.queue[link]:
-                        self.queue[link].append(info)
-
-                else:
-                    self.queue[link] = [info]
-        
-        pprint(self.queue)
-
-        while self.queue:
-            self.collect_data(list(self.queue.keys())[0])
-        
-        return
-
-            
-
-Instance = Main()
-Instance.collect_data('https://www.nationalhistoryacademy.org/the-academy/rising-10th-12th-grade-students/overview/')
+Instance = Main(log_mode = True, collect_data=True)
+Instance.run('https://www.nationalhistoryacademy.org/the-academy/rising-10th-12th-grade-students/overview/')

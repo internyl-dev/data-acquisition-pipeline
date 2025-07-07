@@ -91,6 +91,8 @@ def truncont(cont, kw, area):
     # Extracts content from BeautifulSoup object and splits into individual lines
     if isinstance(cont, BeautifulSoup):
         cont = cont.get_text().split('\n')
+    else:
+        cont = cont.split('\n')
     cont = list(filter(None, cont)) # After splitting, '' may appear. This removes that.
 
     # Find all lines where keyword in kw appears

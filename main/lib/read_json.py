@@ -1,32 +1,32 @@
 
-def get_info_needed(json):
-    req = []
+def get_required_info(json):
+    required_info = []
 
     overview = json['overview']
     if overview['provider'] == 'not provided' or not overview['subject']:
-        req.append('overview')
+        required_info.append('overview')
 
     eligibility = json['eligibility']
     if 'not provided' in eligibility['eligibility']['grades'] and list(eligibility['eligibility']['age'].values()) == ['not provided', 'not provided']:
-        req.append('eligibility')
+        required_info.append('eligibility')
 
     dates = json['dates']
     if any([deadline['date'] == 'not provided' for deadline in dates['deadlines']]):
-        req.append('dates')
+        required_info.append('dates')
 
     locations = json['locations']
     if any([site['virtual'] == 'not provided' for site in locations['locations']]):
-        req.append('locations')
+        required_info.append('locations')
     
     costs = json['costs']
     if any([plan['free'] == 'not provided' for plan in costs['costs']]):
-        req.append('costs')
+        required_info.append('costs')
 
     contact = json['contact']
     if list(contact['contact'].values()) == ['not provided', 'not provided']:
-        req.append('contact')
+        required_info.append('contact')
 
-    return req
+    return required_info
 
 """import json
 from pprint import pprint
