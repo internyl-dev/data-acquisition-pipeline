@@ -22,7 +22,7 @@ class Main:
     def __init__(self, log_mode:bool=False, collect_data:bool=False):
 
         SCHEMA_FILE_PATH = 'main/lib/schemas.json'
-        self.DATA_FILE_PATH = 'main/data.jsonl'
+        self.DATA_FILE_PATH = 'main/scraped-html-json-responses-small.jsonl'
 
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
             self.response = json.load(file)
@@ -276,15 +276,14 @@ class Main:
                 url += '/'
             return url + link
 
-    @staticmethod
-    def read_last_jsonl():
+    def read_last_jsonl(self):
         """
         Reads last line in a JSONL file using byte reading.
 
         Returns:
             value (dict): The parsed JSON content
         """
-        with open("main/data.jsonl", "rb") as f:
+        with open(self.DATA_FILE_PATH, "rb") as f:
             f.seek(0, 2)  # Go to end of file
             pos = f.tell() - 1
 
@@ -392,6 +391,8 @@ class Main:
                     # create_data returns True if the assistant content is "{'unrelated_website': True}"
                     # L> Means that the website that the content was extracted from
                     #    did not include information about the target internship
+                    pprint(self.queue)
+                    pprint(self.response)
                     return
 
         else:     
@@ -443,4 +444,4 @@ class Main:
 
 
 Instance = Main(log_mode = True, collect_data=True)
-Instance.run('https://www.apollotheater.org/education/technical-internship')
+Instance.run('https://www.nasa.gov/careers/pathways/')

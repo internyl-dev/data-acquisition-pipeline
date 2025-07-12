@@ -71,7 +71,7 @@ keywords = {
 
     'link' : {
         'overview': [
-            'overview'
+            'overview', 'learn'
         ],
 
         'eligibility': [
@@ -85,7 +85,7 @@ keywords = {
             'deadline', 'apply', 'date', 'timeline',
             'schedule', 'calendar',
             'round', 'cutoff',
-            'faq', 'frequently asked questions'
+            'faq', 'frequently asked questions', 'frequently-asked-questions'
         ],
 
         'locations': [

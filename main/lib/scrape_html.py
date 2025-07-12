@@ -16,6 +16,9 @@ async def get_html(url):
 import re
 
 def is_link(s):
+    if '#' in s:
+        return False
+    
     pattern = re.compile(
         r'^('
         r'https?://[\w.-]+\.[a-zA-Z]{2,}(/[^\s]*)?'  # full URL
