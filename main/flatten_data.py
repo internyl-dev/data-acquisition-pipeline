@@ -1,7 +1,7 @@
 import json
 
-input_path = "main/scraped-html-json-responses-small.jsonl"
-output_path = "main/scraped-html-json-responses-small-flattened.jsonl"
+input_path = "main/scraped-html-json-responses-medium.jsonl"
+output_path = "main/scraped-html-json-responses-medium-flattened.jsonl"
 
 with open(input_path, "r", encoding="utf-8") as infile, open(output_path, "w", encoding="utf-8") as outfile:
     for line in infile:

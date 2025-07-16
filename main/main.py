@@ -22,38 +22,15 @@ class Main:
     def __init__(self, log_mode:bool=False, collect_data:bool=False):
 
         SCHEMA_FILE_PATH = 'main/lib/schemas.json'
-        self.DATA_FILE_PATH = 'main/scraped-html-json-responses-small.jsonl'
+        self.DATA_FILE_PATH = 'main/scraped-html-json-responses.jsonl'
 
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
             self.response = json.load(file)
         
         self.data = {"messages": [{"role": "user","content": ""},{"role": "assistant","content": {}}]}
-        self.prompt = ''.join("""
-        Extract structured information from the provided text using the standardized schema below. Only use the information available in the given text—do not infer or assume details not explicitly stated. Follow these formatting and logic rules strictly:
-        1. Output must follow the exact schema and field structure shown below.
-        2. If a field is missing or not clearly provided in the text, use:
-        - "not provided" for strings or categories
-        - null for numbers or amounts when stipend or cost is not available
-        3. For `dates.deadlines`:
-        - Write dates as mm-dd-yyyy
-        - Include multiple deadlines if they are for different purposes (e.g., financial aid, housing).
-        - Use `"priority": "high"` only for application deadlines.
-        - If no exact date is mentioned, still include the deadline object but with `"date": "not provided"`.
-        4. For `dates.dates`, include term names (Fall, Spring, Summer), start and end dates only if both are clearly stated.
-        - Only infer end months if duration is greater than 5 weeks (e.g., 6+ weeks or 60+ days = +2 months).
-        5. `duration_weeks` should be numeric if stated (e.g., "four-week" = 4). Use "not provided" otherwise.
-        6. In `eligibility`:
-        - Fill in `grades` using exact grade references (e.g., "rising 11th and 12th graders" → ["Rising Junior", "Rising Senior"])
-        - If age is not stated, set `"age": "not provided"`
-        - Do not infer age from grade level.
-        7. In `costs` and `stipend`:
-        - If "free" is mentioned, set `"free": true` and both `"lowest"` and `"highest"` to null.
-        - If no stipend is mentioned, `"available": false` and `"amount": null`.
-        8. `locations.locations` must only include main residential sites—not travel locations or visit destinations.
-        9. `contact` fields must be "not provided" if not in the current input (even if they exist on other pages).
-        10. Use a flat list for `tags` (e.g., ["history", "residential"]).
-        11. Do not invent or fill in based on prior knowledge. Only extract from the current content.
-        """.split('        '))
+
+        from lib.prompts import prompts
+        self.prompts = prompts
 
         self.history = []
         self.queue = {}
@@ -178,13 +155,14 @@ class Main:
         # L> Helps model determine if the web page is the same internship
         # Include target information needed for extraction
         return (
-            self.prompt
-            + '\n\nEXTRACT THE CONTENTS FOR THE FOLLOWING INFORMATION: '
-            + str({required_info: self.response[required_info]})
-            + '\n\nTARGET INTERNSHIP INFORMATION: '
-            + self.response['overview']['title'] + '\n'
-            + self.response['overview']['provider'] + '\n'
-            + self.response['overview']['description'] + '\n\n'
+            self.prompts[required_info] + '\n'
+            + '\nADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: '
+            + str({required_info: self.response[required_info]}) + '\n'
+            + '\nTARGET INTERNSHIP INFORMATION: '
+            + 'Title: ' + self.response['overview']['title'] + '\n'
+            + 'Provider: ' + self.response['overview']['provider'] + '\n'
+            + 'Description: ' + self.response['overview']['description'] + '\n'
+            + '\nWEBPAGE CONTENTS START HERE: '
             + self.truncate_contents(contents, required_info)
             )
 
@@ -199,7 +177,7 @@ class Main:
         Returns:
             response (str): Response from model
         """
-        response = ask_llama(context).json()['choices'][0]['message']['content']
+        response = ask_llama(context).json()
         return response
 
     @staticmethod
@@ -347,24 +325,95 @@ class Main:
             return True
             
         self.response[required_info].update(response[required_info])
+    
+    def handle_output(self, output):
+        if output == {'unrelated_website': True}:
+            pass
 
-    def run(self, url:str, depth:int=2):
+        error = ''
+
+        output_keys = list(output.keys())
+        output_key = output_keys[0]
+
+        if len(output_keys) > 1:
+            error += f'ERROR: multiple categories detected; {len(output_keys)} categories: {output_keys}\n'
+            error += f'Moving on to first category: {output_key}\n'
+
+        categories = list(self.response.keys())
+        if output_key not in categories:
+            return f'ERROR: invalid schema output; {output_key} is an invalid category\n'
+        
+        output_sections = list(output[output_key].keys())
+        schema_sections = list(self.response[output_key].keys())
+
+        # Get all sections in the output that are not in the schema (invalid sections)
+        invalid_sections = list(set(output_sections) - set(schema_sections))
+        
+        if invalid_sections:
+            if len(invalid_sections) > 1:
+                error += f'ERROR: invalid schema output; {invalid_sections} are invalid sections\n'
+            else:
+                error += f'ERROR: invalid schema output; {invalid_sections} is an invalid section\n'
+
+        # Get all sections in the schema that are not in the output (missing sections)
+        missing_sections = list(set(schema_sections) - set(output_sections))
+
+        if missing_sections:
+            if len(invalid_sections) > 1:
+                error += f'ERROR: invalid schema output; {missing_sections} are missing\n'
+            else:
+                error += f'ERROR: invalid schema output; {missing_sections} is missing\n'
+        
+        return error + str(output)
+
+    def run(self, url:str, depth:int=2, bulk_process = True):
+
+        if self.log_mode:
+            print("Depth: {depth}. Beginning to scrape '{url}'...\n")
 
         # GUARD CLAUSES
+
         if url in self.history:
-            # URL already in history: remove it from queue and return to avoid duplicate extraction
-            self.queue.pop(url)
+
+            # URL already processed: remove from queue to avoid duplicate extraction
+            removed_item = self.queue.pop(url)
+
+            if self.log_mode:
+                print(f"'{removed_item}' already in history, removing from queue...\n")
+
             return
+            
         else:
+
+            # New URL: add to history for tracking
             self.history.append(url)
 
         if depth <= 0:
+
+            if self.log_mode:
+                print(f"Maximum depth recursion reached ({depth})\n")
+                
             return
         
         if not (all_required_info := get_required_info(self.response)):
+            
             # All information already recieved, return to avoid unecessary extraction
+
+            if self.log_mode:
+                print(f"All required info recieved: ending recursion...")
+
             return
 
+        if len(self.queue) > 2:
+
+            # If the queue length is already really long, don't extract information that isn't needed
+            # even if the information is specified as needed in the queue
+            required_info = list(set(self.queue[url]) & set(all_required_info))
+
+            if self.log_mode:
+                print(f"High queue length: minimizing information from {self.queue[url]} to {required_info}...\n")
+
+            self.queue[url] = required_info
 
 
         html_contents = self.scrape_html(url)
@@ -373,6 +422,13 @@ class Main:
         soup = BeautifulSoup(html_contents, features='html.parser')
         soup = self.declutter_html(soup)
         contents = self.clean_whitespace(soup)
+
+        if url in self.queue: # Avoid key error
+            all_required_info = self.queue[url]
+            self.queue.pop(url)
+
+        if self.log_mode:
+            print(f"Extracting for the following info: {all_required_info}...\n")
         
         if self.collect_data:
 
@@ -380,11 +436,12 @@ class Main:
             # L> Will append all scraped context to DATA_FILE_PATH
             # L> Up to user to input extracted information
             # L> Used for data collection for fine-tuning
-            if url in self.queue: # Avoid key error
-                all_required_info = self.queue[url]
-                self.queue.pop(url)
-            
+
             for required_info in all_required_info:
+
+                if bulk_process:
+                    required_info = "all"
+                    
                 context = self.create_context(contents, required_info)
 
                 if self.create_data(context, required_info):
@@ -394,21 +451,29 @@ class Main:
                     pprint(self.queue)
                     pprint(self.response)
                     return
+                
+                if bulk_process:
+                    break
 
         else:     
 
             # Data collection mode off:
             # L> Just sends request to presumably fine-tuned model
-            if url in self.queue:
-                all_required_info = self.queue[url]
-                self.queue.pop(url)
 
             for required_info in all_required_info:
+
+                if bulk_process:
+                    required_info = "all"
+
                 context = self.create_context(contents, required_info)
 
                 # Send AI a POST request asking to fill out schema chunks and update full schema
-                #self.response[required_info].update(self.send_request(info, context)[info])
+                print("Sending request...")
+                pprint(response := self.send_request(context))
                 self.response.update({'link': url})
+
+                if bulk_process:
+                    break
         
         pprint(self.response)
         
@@ -437,11 +502,22 @@ class Main:
         pprint(self.queue)
 
         while self.queue:
-            self.run(list(self.queue.keys())[0])
+            self.run(list(self.queue.keys())[0], bulk_process=False)
         
         return
 
 
 
-Instance = Main(log_mode = True, collect_data=True)
-Instance.run('https://www.nasa.gov/careers/pathways/')
+Instance = Main(log_mode = True, collect_data=False)
+
+# Instructions to use in data collection mode:
+# 1. Input the internship overview page link into the run method as an argument
+# 2. A new JSONL file will open which will follow the DATA_URL_PATH
+# 3. Open the file and copy the prompt
+# 4. Put the prompt in a capable LLM
+#    L> Ensure that the output is the correct schema and that the data is accurate
+#    L> Convert the schema into one line if needed
+# 5. Paste the one-line schema into the assisstant.contents section
+# 6. A new prompt will appear, copy the prompt and repeat from step 4
+# 7. If no new prompt appears, you are done, if you get an error, you did one of the steps wrong or pasted the schema in wrong
+Instance.run('https://www.metmuseum.org/about-the-met/internships/high-school/summer-high-school-internships')
