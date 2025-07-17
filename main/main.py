@@ -154,10 +154,15 @@ class Main:
         # Includes the information about the target internship
         # L> Helps model determine if the web page is the same internship
         # Include target information needed for extraction
+        if required_info == "all":
+            schema = str(self.response)
+        else:
+            schema = str({required_info: self.response[required_info]})
+
         return (
             self.prompts[required_info] + '\n'
             + '\nADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: '
-            + str({required_info: self.response[required_info]}) + '\n'
+            + schema + '\n'
             + '\nTARGET INTERNSHIP INFORMATION: '
             + 'Title: ' + self.response['overview']['title'] + '\n'
             + 'Provider: ' + self.response['overview']['provider'] + '\n'
@@ -326,7 +331,9 @@ class Main:
             
         self.response[required_info].update(response[required_info])
     
-    def handle_output(self, output):
+    def validate_output(self, output):
+        """
+        """
         if output == {'unrelated_website': True}:
             pass
 
@@ -366,10 +373,67 @@ class Main:
         
         return error + str(output)
 
+    def handle_output(self, response, required_info):
+        """
+        Takes the output from the model and makes it usable in the rest of the codebase.
+        Args:
+            response (str): The output from the model
+
+        Returns:
+            value (dict or None): The dictionary output from the model assuming it returned a dictionary 
+            or None if the output isn't a dictionary or if the output is {"unrelated_website": True}
+        """
+        # Access the raw content string
+        raw_content_string = response["choices"][0]["message"]["content"]
+
+        # Remove the markdown code block delimiters if they exist
+        # This is a common pattern for models returning structured data
+        if raw_content_string.startswith("```json") and raw_content_string.endswith("```"):
+            json_string = raw_content_string[len("```json"): -len("```")].strip()
+        else:
+            json_string = raw_content_string.strip() # In case it's just raw JSON without markdown
+
+        # Parse the JSON string into a Python dictionary
+        try:
+            parsed_response = json.loads(json_string)
+            print("Successfully parsed data:\n")
+            print(json.dumps(parsed_response, indent=2))
+
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON: {e}")
+            print(f"Problematic JSON string:\n{json_string}")
+            return None
+        except KeyError as e:
+            print(f"Key error when accessing response: {e}. Check the structure of the response.")
+            return None
+
+        if parsed_response == {"unrelated_website": True}:
+            return None
+
+        # After parsing, update the initial schema
+
+        # Update for non bulk_process requirements
+        if not required_info == "all":
+            self.response[required_info].update(parsed_response[required_info])
+
+            return parsed_response
+        
+        # Update for bulk process requirements
+        for category in self.response:
+            for section in self.response[category]:
+                # The parsed response doesn't contain the categories like "overview"
+                # so we have to loop through each section in the schema and update it
+                # with the corresponding section in the parsed response
+                try:
+                    self.response[category][section] = parsed_response[section]
+                except Exception: continue
+
+                return parsed_response
+
     def run(self, url:str, depth:int=2, bulk_process = True):
 
         if self.log_mode:
-            print("Depth: {depth}. Beginning to scrape '{url}'...\n")
+            print(f"Depth: {depth}. Beginning to scrape '{url}'...\n")
 
         # GUARD CLAUSES
 
@@ -470,6 +534,12 @@ class Main:
                 # Send AI a POST request asking to fill out schema chunks and update full schema
                 print("Sending request...")
                 pprint(response := self.send_request(context))
+
+                # handle_output returns None if the output from the model can't be parsed as a dictionary
+                # or the output is {"unrelated_website": True}
+                if not (parsed_data := self.handle_output(response, required_info)):
+                    return
+
                 self.response.update({'link': url})
 
                 if bulk_process:
