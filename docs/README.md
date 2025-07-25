@@ -1,5 +1,11 @@
 # Backend Testing Site
 
+# How to use
+
+1. `Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process`
+2. `.venv/scripts/activate`
+3. `python src/main.py`
+
 ## Tech Used
 
 ### FastAPI
