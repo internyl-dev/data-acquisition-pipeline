@@ -4,11 +4,11 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 
 # Import classes
-from components.web_scraping import WebScraping
-from components.html_parsing import HTMLParsing
-from components.content_summ import ContentSummarization
-from components.client import Client
-from components.web_crawling import WebCrawling
+from src.components.web_scraping import WebScraping
+from src.components.html_parsing import HTMLParsing
+from src.components.content_summ import ContentSummarization
+from src.components.client import Client
+from src.components.web_crawling import WebCrawling
 
 import time
 def stopwatch(func):
@@ -184,11 +184,11 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
                 if bulk_process:
                     required_info = "all"
 
-                pprint(context := self.create_context(contents, required_info))
+                pprint(prompt := self.create_prompt(contents, required_info))
 
                 # Send AI a POST request asking to fill out schema chunks and update full schema
                 print("Sending request...")
-                pprint(response := self.post_openai(prompt=context))
+                pprint(response := self.post_openai(prompt=prompt, context=self.prompts[required_info]))
 
                 # handle_output returns None if the output from the model can't be parsed as a dictionary
                 # or the output is {"unrelated_website": True}
@@ -233,7 +233,7 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
 
 
 
-Instance = Main(log_mode = True, collect_data=False)
+#Instance = Main(log_mode = True, collect_data=False)
 
 # Instructions to use in data collection mode:
 # 1. Input the internship overview page link into the run method as an argument
@@ -245,4 +245,4 @@ Instance = Main(log_mode = True, collect_data=False)
 # 5. Paste the one-line schema into the assisstant.contents section
 # 6. A new prompt will appear, copy the prompt and repeat from step 4
 # 7. If no new prompt appears, you are done, if you get an error, you did one of the steps wrong or pasted the schema in wrong
-Instance.run('https://www.metmuseum.org/about-the-met/internships/high-school/summer-high-school-internships')
+#Instance.run('https://www.metmuseum.org/about-the-met/internships/high-school/summer-high-school-internships')

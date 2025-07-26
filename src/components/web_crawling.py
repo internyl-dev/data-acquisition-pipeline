@@ -1,7 +1,7 @@
 
 import re
 from bs4 import BeautifulSoup
-from components.lib.keywords import keywords
+from src.components.lib.keywords import keywords
 
 class WebCrawling:
     def __init__(self):

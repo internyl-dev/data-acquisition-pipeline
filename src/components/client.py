@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import requests
 from openai import OpenAI
 import json
-from components.lib.prompts import prompts
+from src.components.lib.prompts import prompts
 
 from dotenv import load_dotenv
 import os
@@ -22,7 +22,7 @@ class Client:
 
         self.prompts = prompts
 
-    def create_context(self, contents:BeautifulSoup|str, required_info:str):
+    def create_prompt(self, contents:BeautifulSoup|str, required_info:str):
         """
         Creates the context for the language model to extract necessary info from.
 
@@ -44,8 +44,7 @@ class Client:
             schema = str({required_info: self.response[required_info]})
 
         return (
-            self.prompts[required_info] + '\n'
-            + '\nADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: '
+            '\nADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: '
             + schema + '\n'
             + '\nTARGET INTERNSHIP INFORMATION: '
             + 'Title: ' + self.response['overview']['title'] + '\n'
@@ -85,7 +84,7 @@ class Client:
         response = requests.post(url, headers, json)
         return response
     
-    def post_openai(self, prompt:str, model:str="gpt-4o-mini"):
+    def post_openai(self, prompt:str, context:str="You are a helpful assistant", model:str="gpt-4o-mini"):
         """
         Sends post request to the OpenAI completions server
 
@@ -104,6 +103,7 @@ class Client:
         model=model,
         store=True,
         messages=[
+            {"role": "system", "content": context},
             {"role": "user", "content": prompt}
         ]
         )
