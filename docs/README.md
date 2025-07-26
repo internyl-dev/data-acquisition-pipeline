@@ -2,10 +2,26 @@
 
 # How to use
 
-1. `pip install -r requirements.txt`
-2. `Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process`
-3. `.venv/scripts/activate`
-4. `python src/main.py`
+### Add API Keys
+1. Navigate to `src/.env` and input any API keys there
+
+### Run main
+```
+# 1. Create a virtual environment
+python -m venv .venv
+
+# 2. Activate the virtual environment
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+.venv/scripts/activate
+
+# 3. Install requirements
+pip install -r requirements.txt`
+
+# 4. Run the main file
+python src/main.py
+```
+
+# also everything below this is false and will be updated in the next commit
 
 ## Tech Used
 
