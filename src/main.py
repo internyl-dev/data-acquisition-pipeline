@@ -188,7 +188,7 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
 
                 # Send AI a POST request asking to fill out schema chunks and update full schema
                 print("Sending request...")
-                pprint(response := self.send_request(context))
+                pprint(response := self.post_openai(prompt=context))
 
                 # handle_output returns None if the output from the model can't be parsed as a dictionary
                 # or the output is {"unrelated_website": True}

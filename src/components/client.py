@@ -5,12 +5,16 @@ from openai import OpenAI
 import json
 from components.lib.prompts import prompts
 
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 class Client:
     def __init__(self):
-        self.openrouter_api_key = "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"
-        self.anthropic_api_key = ""
-        self.openai_api_key = "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"
-        self.deepseek_api_key = ""
+        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 
         SCHEMA_FILE_PATH = "src/components/lib/schemas.json"
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
@@ -51,7 +55,7 @@ class Client:
             + self.truncate_contents(contents, required_info)
             )
 
-    def post_openrouter(self, prompt, model:str="google/gemma-3n-e2b-it:free"):
+    def post_openrouter(self, prompt:str, model:str="google/gemma-3n-e2b-it:free"):
         """
         Sends post request to the OpenRouter completions server
 
@@ -81,7 +85,7 @@ class Client:
         response = requests.post(url, headers, json)
         return response
     
-    def post_openai(self, prompt, model:str="gpt-4o-mini"):
+    def post_openai(self, prompt:str, model:str="gpt-4o-mini"):
         """
         Sends post request to the OpenAI completions server
 
@@ -97,7 +101,7 @@ class Client:
         )
 
         completion = client.chat.completions.create(
-        model,
+        model=model,
         store=True,
         messages=[
             {"role": "user", "content": prompt}
