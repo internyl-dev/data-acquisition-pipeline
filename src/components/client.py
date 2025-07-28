@@ -9,12 +9,24 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL")
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL")
+
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL")
+
+CUSTOM_API_KEY = os.getenv("API_KEY")
+CUSTOM_MODEL = os.getenv("MODEL")
+CUSTOM_ENDPOINT_URL = os.getenv("ENDPOINT_URL")
+
 class Client:
     def __init__(self):
-        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-        self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-        self.openai_api_key = os.getenv("OPENAI_API_KEY")
-        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 
         SCHEMA_FILE_PATH = "src/components/lib/schemas.json"
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
@@ -54,7 +66,7 @@ class Client:
             + self.truncate_contents(contents, required_info)
             )
 
-    def post_openrouter(self, prompt:str, model:str="google/gemma-3n-e2b-it:free"):
+    def post_openrouter(self, prompt:str, context:str="You are a helpful assisstant", model:str=OPENROUTER_MODEL):
         """
         Sends post request to the OpenRouter completions server
 
@@ -63,19 +75,19 @@ class Client:
             model (str): The name of the model to use
 
         Returns:
-            output (str): Output from model given prompt
+            response (str): Output from model given prompt
         """
-        api_key = self.openrouter_api_key
         url = "https://openrouter.ai/api/v1/chat/completions"
 
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json"
         }
 
         json={
             "model": model,
             "messages": [
+                {"role": "system", "content": context},
                 { "role": "user", "content": prompt}
             ],
             "stream": False
@@ -84,7 +96,7 @@ class Client:
         response = requests.post(url, headers, json)
         return response
     
-    def post_openai(self, prompt:str, context:str="You are a helpful assistant", model:str="gpt-4o-mini"):
+    def post_openai(self, prompt:str, context:str="You are a helpful assistant", model:str=OPENAI_MODEL):
         """
         Sends post request to the OpenAI completions server
 
@@ -93,10 +105,10 @@ class Client:
             model (str): The name of the model to use
 
         Returns:
-            output (str): Output from model given prompt
+            response (str): Output from model given prompt
         """
         client = OpenAI(
-        api_key=self.openai_api_key
+        api_key=OPENAI_API_KEY
         )
 
         completion = client.chat.completions.create(
@@ -110,15 +122,52 @@ class Client:
 
         print(completion.choices[0].message)
 
-    def validate_output(self, output):
+    def post_custom_endpoint(self, prompt:str, model:str=CUSTOM_MODEL, context:str="You are a helpful assistant", url=CUSTOM_ENDPOINT_URL):
         """
+        Sends post request to the user inputted completions server
+
+        Args:
+            prompt (str): The prompt to send to the model
+            model (str): The name of the model to use
+
+        Returns:
+            response (str): Output from model given prompt
         """
-        if output == {'unrelated_website': True}:
+
+        headers = {
+            "Authorization": f"Bearer {CUSTOM_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        json={
+            "model": model,
+            "messages": [
+                {"role": "system", "content": context},
+                { "role": "user", "content": prompt}
+            ],
+            "stream": False
+        }
+
+        response = requests.post(url, headers, json)
+        return response
+
+    def validate_output(self, response:dict):
+        """
+        Determines whether or not a JSON is a valid Internyl schema
+        
+        Args:
+            response (dict): The outputted dictionary from the model or any dictionary
+        
+        Returns:
+            value (str): Outputs an empty string if the dictionary is a valid Internyl schema 
+            or a concatenated string of errors detailing the invalid parts of the response
+        """
+        if response == {'unrelated_website': True}:
             pass
 
         error = ''
 
-        output_keys = list(output.keys())
+        output_keys = list(response.keys())
         output_key = output_keys[0]
 
         if len(output_keys) > 1:
@@ -127,40 +176,40 @@ class Client:
 
         categories = list(self.response.keys())
         if output_key not in categories:
-            return f'ERROR: invalid schema output; {output_key} is an invalid category\n'
+            return f'ERROR: invalid schema response; {output_key} is an invalid category\n'
         
-        output_sections = list(output[output_key].keys())
+        output_sections = list(response[output_key].keys())
         schema_sections = list(self.response[output_key].keys())
 
-        # Get all sections in the output that are not in the schema (invalid sections)
+        # Get all sections in the response that are not in the schema (invalid sections)
         invalid_sections = list(set(output_sections) - set(schema_sections))
         
         if invalid_sections:
             if len(invalid_sections) > 1:
-                error += f'ERROR: invalid schema output; {invalid_sections} are invalid sections\n'
+                error += f'ERROR: invalid schema response; {invalid_sections} are invalid sections\n'
             else:
-                error += f'ERROR: invalid schema output; {invalid_sections} is an invalid section\n'
+                error += f'ERROR: invalid schema response; {invalid_sections} is an invalid section\n'
 
-        # Get all sections in the schema that are not in the output (missing sections)
+        # Get all sections in the schema that are not in the response (missing sections)
         missing_sections = list(set(schema_sections) - set(output_sections))
 
         if missing_sections:
             if len(invalid_sections) > 1:
-                error += f'ERROR: invalid schema output; {missing_sections} are missing\n'
+                error += f'ERROR: invalid schema response; {missing_sections} are missing\n'
             else:
-                error += f'ERROR: invalid schema output; {missing_sections} is missing\n'
+                error += f'ERROR: invalid schema response; {missing_sections} is missing\n'
         
-        return error + str(output)
+        return error + str(response)
 
     def handle_output(self, response, required_info):
         """
-        Takes the output from the model and makes it usable in the rest of the codebase.
+        Takes the response from the model and makes it usable for the rest of the codebase.
         Args:
-            response (str): The output from the model
+            response (str): The response from the model
 
         Returns:
-            value (dict or None): The dictionary output from the model assuming it returned a dictionary 
-            or None if the output isn't a dictionary or if the output is {"unrelated_website": True}
+            value (dict or None): The dictionary response from the model assuming it returned a dictionary 
+            or None if the response isn't a dictionary or if the response is {"unrelated_website": True}
         """
         # Access the raw content string
         raw_content_string = response["choices"][0]["message"]["content"]
