@@ -6,6 +6,20 @@ Internyl Website Repo: https://github.com/cold-muffin/internyl
 <br>
 Internyl Website: https://internyl.org
 
+## Table of Contents
+1. [How to use](#how-to-use)
+  - [Add API Keys](#add-api-keys)
+  - [Run main](#run-main)
+2. [How it works](#how-it-works)
+  - [Web Scraping](#web-scraping)
+  - [HTML Parsing](#html-parsing)
+  - [Content Summarization](#content-summarization)
+  - [Client](#client)
+  - [Web Crawling](#web-crawling)
+3. [Tech Used](#development)
+  - [Playwright](#playwright)
+  - [BeautifulSoup](#bs4)
+
 ## How to use
 
 ### Add API Keys
@@ -51,10 +65,13 @@ Based on the current state of the dictionary containing all of the info about th
 ### Client
 #### `src/components/client.py`
 
-
+The client sends a request to the endpoint specified in `.env` and retrieves the response. The prompt is usually based on which required info is being extracted at the moment (except in bulk extraction) The processed schema is then extracted from the response including any other necessary information like the prompt and completions token count for logging purposes. 
+**_NOTE:_** In bulk extraction, all required info is requested by the client at once.
 
 ### Web Crawling
 #### `src/components/web_crawling.py`
+
+If any other info is required, we retrieve all anchor elements from within the scraped HTML and look for valid links. Based on the links and the content of the anchor element, we filter the links, again for specific keywords, to look for links that potentially contain required information. Recursion again starts when we call the entire method with the new link as an argument. 
 
 ## Tech Used
 

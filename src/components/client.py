@@ -1,8 +1,9 @@
 
+from pprint import pprint
 from bs4 import BeautifulSoup
+import json
 import requests
 from openai import OpenAI
-import json
 from src.components.lib.prompts import prompts
 
 from dotenv import load_dotenv
@@ -94,7 +95,7 @@ class Client:
         }
 
         response = requests.post(url, headers, json)
-        return response
+        return response.json()
     
     def post_openai(self, prompt:str, context:str="You are a helpful assistant", model:str=OPENAI_MODEL):
         """
@@ -143,13 +144,13 @@ class Client:
             "model": model,
             "messages": [
                 {"role": "system", "content": context},
-                { "role": "user", "content": prompt}
+                {"role": "user", "content": prompt}
             ],
             "stream": False
         }
 
-        response = requests.post(url, headers, json)
-        return response
+        response = requests.post(url, headers=headers, json=json)
+        return response.json(), headers | json
 
     def validate_output(self, response:dict):
         """
@@ -201,9 +202,9 @@ class Client:
         
         return error + str(response)
 
-    def handle_output(self, response, required_info):
+    def parse_output(self, response):
         """
-        Takes the response from the model and makes it usable for the rest of the codebase.
+        Takes the response from the model and extracts the JSON output and parses it.
         Args:
             response (str): The response from the model
 
@@ -237,14 +238,16 @@ class Client:
 
         if parsed_response == {"unrelated_website": True}:
             return None
+        
+        return parsed_response
 
-        # After parsing, update the initial schema
+    def handle_output(self, required_info, response):
 
         # Update for non bulk_process requirements
         if not required_info == "all":
-            self.response[required_info].update(parsed_response[required_info])
+            self.response[required_info].update(response[required_info])
 
-            return parsed_response
+            return response
         
         # Update for bulk process requirements
         for category in self.response:
@@ -253,7 +256,7 @@ class Client:
                 # so we have to loop through each section in the schema and update it
                 # with the corresponding section in the parsed response
                 try:
-                    self.response[category][section] = parsed_response[section]
+                    self.response[category][section] = response[section]
                 except Exception: continue
 
-                return parsed_response
+                return response

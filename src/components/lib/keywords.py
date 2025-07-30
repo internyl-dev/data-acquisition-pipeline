@@ -1,5 +1,5 @@
 
-keywords = {
+KEYWORDS = {
     'overview': [
         'overview',
 

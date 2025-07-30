@@ -1,7 +1,11 @@
 
 import asyncio
 from bs4 import BeautifulSoup
-from pprint import pprint
+
+import json
+import datetime
+from pprint import pformat
+import atexit
 
 # Import classes
 from src.components.web_scraping import WebScraping
@@ -34,6 +38,28 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
 
         self.log_mode = log_mode
         self.collect_data = collect_data
+
+        LOG_FILE_PATH = "logs/"
+        if self.log_mode:
+            time_now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            self.log_file = open(f"{LOG_FILE_PATH}{time_now}.txt", "a", encoding="utf-8")
+            # Register log file closure on exit
+            log_file = self.log_file
+            atexit.register(lambda: log_file and log_file.close())
+
+
+    def log(self, message, use_pformat=True):
+        if self.log_mode:
+            if use_pformat:
+                message = pformat(message, width=160)
+            print(message + '\n')
+
+            # Remove parentheses and quotations to make log file look clean
+            if isinstance(message, (list, tuple)):
+                message = '\n'.join(str(m) for m in message)
+
+            self.log_file.write(f'{message}\n\n')
+            self.log_file.flush()
 
     @staticmethod
     def get_required_info(json):
@@ -68,51 +94,41 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
 
         return required_info
 
-    def url_is_in_history(self, url):
+    def url_in_history(self, url):
         if url in self.history:
 
             # URL already processed: remove from queue to avoid duplicate extraction
             removed_item = self.queue.pop(url)
 
-            if self.log_mode:
-                print(f"'{removed_item}' already in history, removing from queue...\n")
-
+            self.log(f"'{removed_item}' already in history, removing from queue...")
             return True
         
     def max_depth_reached(self, depth):
         if depth <= 0:
 
-            if self.log_mode:
-                print(f"Maximum depth recursion reached ({depth})\n")
-                
+            self.log(f"Maximum depth recursion reached ({depth}), ending recursion...")
             return True
         
     def recieved_all_required_info(self):
-        if not (all_required_info := self.get_required_info(self.response)):
+        if not self.get_required_info(self.response):
             
             # All information already recieved, return to avoid unecessary extraction
 
-            if self.log_mode:
-                print(f"All required info recieved: ending recursion...")
-
+            self.log(f"All required info recieved: ending recursion...")
             return True
-        else:
-            self.all_required_info = all_required_info
 
     def minimize_required_info(self, url, max_queue_length):
         if len(self.queue) > max_queue_length:
 
             # If the queue length is already really long, don't extract information that isn't needed
             # even if the information is specified as needed in the queue
-            required_info = list(set(self.queue[url]) & set(self.all_required_info))
+            required_info = list(set(self.queue[url]) & set(self.get_required_info(self.response))) # Common required info between the two
 
-            if self.log_mode:
-                print(f"High queue length ({max_queue_length}): minimizing information from {self.queue[url]} to {required_info}...\n")
-
+            self.log(f"High queue length ({max_queue_length}): minimizing information from {self.queue[url]} to {required_info}...\n")
             self.queue[url] = required_info
 
     def guard_clauses(self, url, depth):
-        if self.url_is_in_history(url):
+        if self.url_in_history(url):
             return True
 
         if self.max_depth_reached(depth):
@@ -122,32 +138,33 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
             return True
 
 
+
     def run(self, url:str, depth:int=2, bulk_process = True):
 
-        if self.log_mode:
-            print(f"Depth: {depth}. Beginning to scrape '{url}'...\n")
+        self.log(f"Depth: {depth}. Beginning to scrape '{url}'...")
+        self.queue.pop(url, None) # Remove from queue
 
+        # GUARD CLAUSES
         if self.guard_clauses(url, depth):
             return
 
         # New URL: add to history for tracking
         self.history.append(url)
 
-        self.minimize_required_info(url, 1)
-
+        # WEB SCRAPING
         html_contents = asyncio.run(self.scrape_html(url))
-        raw_soup = BeautifulSoup(html_contents, features='html.parser') # Save aside html_contents for get_all_links
 
-        soup = BeautifulSoup(html_contents, features='html.parser')
-        soup = self.declutter_html(soup)
-        contents = self.clean_whitespace(soup)
+        # CONTENT SUMMARIZATION
+        contents = self.summarize_contents(html_contents)
 
+        # Find all required info and update object variable self.all_required_info
         if url in self.queue: # Avoid key error
+            self.minimize_required_info(url, max_queue_length=1) # Minimizes the required info within the queue value
             self.all_required_info = self.queue[url]
-            self.queue.pop(url)
+        else:
+            self.all_required_info = self.get_required_info(self.response)
 
-        if self.log_mode:
-            print(f"Extracting for the following info: {self.all_required_info}...\n")
+        self.log(f"Extracting for the following info: {self.all_required_info}...")
         
         if self.collect_data:
 
@@ -167,44 +184,53 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
                     # create_data returns True if the assistant content is "{'unrelated_website': True}"
                     # L> Means that the website that the content was extracted from
                     #    did not include information about the target internship
-                    pprint(self.queue)
-                    pprint(self.response)
+                    self.log(self.queue)
+                    self.log(self.response)
                     return
                 
                 if bulk_process:
                     break
 
-        else:     
+        else:
 
             # Data collection mode off:
-            # L> Just sends request to presumably fine-tuned model
+            # L> Just sends request to model
 
             for required_info in self.all_required_info:
 
                 if bulk_process:
+                    self.log("Overriding previous statement, instead performing bulk extraction...")
                     required_info = "all"
+                    self.response['overview'].update({'link': url})
 
-                pprint(prompt := self.create_prompt(contents, required_info))
-
+                prompt = self.create_prompt(contents, required_info)
+                
                 # Send AI a POST request asking to fill out schema chunks and update full schema
-                print("Sending request...")
-                pprint(response := self.post_custom_endpoint(prompt=prompt, context=self.prompts[required_info]))
+                self.log("Sending request...")
+                response, request = self.post_custom_endpoint(prompt=prompt, context=self.prompts[required_info])
+                self.log(request)
 
-                # handle_output returns None if the output from the model can't be parsed as a dictionary
+                self.log('Recieved response!')
+                self.log(response)
+
+                # parse_output returns None if the output from the model can't be parsed as a dictionary
                 # or the output is {"unrelated_website": True}
-                if not (parsed_data := self.handle_output(response, required_info)):
+                if not (parsed_data := self.parse_output(response)):
+                    self.log("Either the output couldn't be parsed or the output indicated an unrelated website, ending recursion...")
                     return
-
-                self.response.update({'link': url})
-
+                else:
+                    if bulk_process: self.response = parsed_data
+                    else: self.response.update(parsed_data)
+                
                 if bulk_process:
                     break
         
-        pprint(self.response)
+        self.log(json.dumps(self.response, indent=1))
         
         self.all_required_info = self.get_required_info(self.response)
-        all_links = self.get_all_links(raw_soup)
-        pprint(all_links)
+        self.log(f'The following info is still required: {self.all_required_info}')
+        all_links = self.get_all_links(BeautifulSoup(html_contents, features='html.parser'))
+        self.log(f'All links:\n{json.dumps(all_links)}', use_pformat=False)
 
         for required_info in self.all_required_info:
             filtered_links = self.filter_links(all_links, required_info)
@@ -216,18 +242,19 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
                 if link in self.history:
                     continue
 
-                # Add info if it was not there already
+                # If link is in queue: add info if it was not already there
                 elif link in self.queue:
                     if required_info not in self.queue[link]:
                         self.queue[link].append(required_info)
 
+                # Link is not in history or queue: add it into the queue
                 else:
                     self.queue[link] = [required_info]
 
-        pprint(self.queue)
+        self.log(f"Updated queue:\n{json.dumps(self.queue, indent=1)}")
 
         while self.queue:
-            self.run(list(self.queue.keys())[0], bulk_process=False)
+            self.run(depth=depth-1, url=list(self.queue.keys())[0], bulk_process=False)
         
         return
 

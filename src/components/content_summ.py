@@ -1,7 +1,7 @@
 
 import re
 from bs4 import BeautifulSoup
-from src.components.lib.keywords import keywords
+from src.components.lib.keywords import KEYWORDS
 
 class ContentSummarization:
     def __init__(self):
@@ -167,17 +167,28 @@ class ContentSummarization:
 
         # Truncate for dates as well as keywords if required info is 'dates'
         if required_info == 'dates':
-            all_keywords = (keywords[required_info] 
+            all_keywords = (KEYWORDS[required_info] 
                         + self.find_dates(contents))
         
         # Truncate for emails and phone numbers as well as keywords if required info is 'contact'
         elif required_info == 'contact':
-            all_keywords = (keywords[required_info] 
+            all_keywords = (KEYWORDS[required_info] 
                         + self.find_emails(contents) 
                         + self.find_phone_numbers(contents))
             
+        # Don't truncate contents if we're performing a bulk extraction
+        elif required_info == 'all':
+            return contents
+            
         # Or simply truncate for keywords associated with the required info
         else:
-            all_keywords = keywords[required_info]
+            all_keywords = KEYWORDS[required_info]
 
         return self.truncont(contents, all_keywords, area)
+    
+    def summarize_contents(self, html_contents):
+        soup = BeautifulSoup(html_contents, features='html.parser')
+        soup = self.declutter_html(soup)
+        contents = self.clean_whitespace(soup)
+
+        return contents

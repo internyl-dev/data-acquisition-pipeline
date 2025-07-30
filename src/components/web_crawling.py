@@ -1,12 +1,13 @@
 
 import re
 from bs4 import BeautifulSoup
-from src.components.lib.keywords import keywords
+from src.components.lib.keywords import KEYWORDS
 
 class WebCrawling:
     def __init__(self):
         pass
 
+    @staticmethod
     def is_link(s):
         """
         Finds and returns all links found in a string
@@ -30,7 +31,6 @@ class WebCrawling:
             r'|'
             r'[\w.-]+\.[a-zA-Z]{2,}(/[^\s]*)?'           # bare domain
             r')$',
-            re.IGNORECASE
         )
         return bool(pattern.match(s))
 
@@ -49,16 +49,20 @@ class WebCrawling:
         links = soup.find_all('a')
 
         for link in links:
-            url = link.get('href')
-            text = link.get_text().strip()
-
             try:
                 # Add link to dictionary with the associated text being the key
                 # L> For future filtering based off of keywords
+                url = link.get('href').strip()
+                text = link.get_text().strip()
+                
                 if self.is_link(url):
                     new_links[text] = url
+                    print(f"{text, url} added to new links")
 
-            except Exception: continue
+            except Exception: 
+                print(f"{url} is not a link")
+                continue
+
 
         return new_links
 
@@ -75,7 +79,7 @@ class WebCrawling:
         """
         filtered_links = {}
         for content in links:
-            for keyword in keywords['link'][required_info]:
+            for keyword in KEYWORDS['link'][required_info]:
 
                 # If the keyword was found in the text or HREF, add it to the new dictionary
                 if re.search(fr'{keyword}', content, re.I) or re.search(fr'{keyword}', links[content], re.I):
