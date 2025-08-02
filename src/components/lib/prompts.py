@@ -2,7 +2,7 @@ prompts = {
     "overview": """
 You are given a partially filled JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. Your task is to update only the 'overview' section using information from the text after WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
 
 Core rules:
 - Do NOT infer or guess.
@@ -13,11 +13,11 @@ Fill:
 - "title": Full program name if explicitly given.
 - "provider": Organization offering the program.
 - "description": A summary or mission statement if present.
-- "link": Direct program or application URL if shown.
 - "subject": List of academic topics explicitly stated.
+  - It is acceptable for subjects to be derived from hiring skillsets or offered courses
 - "tags": Keywords like "free", "residential", or "virtual" if explicitly mentioned.
 
-Never derive subject or tags from context — extract only literal keywords.
+In the schema there may be a "link" key; that is for us only so don't add it.
 """,
 
 
@@ -25,7 +25,7 @@ Never derive subject or tags from context — extract only literal keywords.
     "eligibility": """
 You are updating the 'eligibility' section of the JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA, using only data from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
 
 Core rules:
 - Use only explicitly stated information.
@@ -46,7 +46,7 @@ Be literal and precise — convert 9th, 10th, 11th, and 12th grade to freshman, 
     "dates": """
 You are updating the 'dates' section of the JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using content from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
 
 Core rules:
 - Never infer or estimate.
@@ -60,6 +60,8 @@ Update deadlines:
 Update program dates:
 - Include term (Summer, Winter, Spring, Fall), start, and end dates only if both are clearly stated.
 - Use mm-dd-yyyy format.
+  - Providing only the month for dates where the days aren't given is acceptable (e.g. "September 2026")
+  - If the year isn't provided, it is safe to assume that it refers to the current year
 
 Update duration_weeks:
 - Use a number only if the duration is clearly stated (e.g., "6-week program").
@@ -73,7 +75,7 @@ Do not infer dates or duration from vague phrases or context.
     "locations": """
 Update the 'locations' section of the schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using data from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
 
 Core rules:
 - Use only explicitly mentioned info.
@@ -92,7 +94,7 @@ Include only the main residential/instructional site — ignore travel destinati
     "costs": """
 You are updating the 'costs' section of the schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using content from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
 
 Core rules:
 - Use only direct mentions — do not assume or calculate.
@@ -115,7 +117,7 @@ Include each cost type as a separate object if multiple are mentioned.
     "contact": """
 Update the 'contact' section of the schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using data found in WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
 
 Core rules:
 - Only include contact info shown directly in the webpage content.
@@ -136,7 +138,7 @@ Do not copy from social links or headers unless the contact is fully visible in 
 You are given a partially filled JSON schema after the line: ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. 
 Extract structured data from the HTML/plaintext that follows WEBPAGE CONTENTS START HERE and update the JSON schema accordingly.
 
-If the webpage content does NOT relate to or mention the program described in TARGET INTERNSHIP INFORMATION, return only:
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only:
 {"unrelated_website": true}
 
 —————
@@ -144,7 +146,7 @@ GLOBAL RULES:
 - Do NOT add or remove any keys from the schema.
 - Do NOT infer, guess, or hallucinate information.
 - Use "not provided" for missing text fields or categories.
-- Use mm-dd-yyyy for all dates.
+- Use mm-dd-yyyy for all dates or just the year, or month and year if that is the only information given.
 - Only update values that are explicitly supported by the provided text.
 - Do not change or overwrite any field that already contains data unless new text confirms a change or addition.
 - Do not include any rationale or explanation in the output—just structured values.
@@ -157,14 +159,15 @@ SECTION INSTRUCTIONS:
 - "provider": The organization running the program.
 - "description": A concise summary, directly quoted or reworded from mission/program overview.
 - "link": A direct URL to the program or application if provided.
-- "subject": List only explicitly stated academic topics (e.g., biology, computer science).
-- "tags": Use literal keywords only (e.g., "free", "residential", "virtual").
+- "subject": List stated academic topics (e.g., biology, computer science).
+  - It is acceptable for subjects to be derived from hiring skillsets or offered courses
+- "tags": Use literal keywords (e.g., "free", "residential", "virtual", etc.).
 
 Never derive subject areas or tags from theme or domain unless exact keywords appear in the text.
 
 2. ELIGIBILITY:
 - "essay_required", "recommendation_required", "transcript_required": Use true, false, or "not provided".
-- "other": List any extra requirements verbatim (e.g., "An interview is required").
+- "other": List any extra requirements (e.g., "An interview is required").
 - "grades": Convert stated grades (e.g., 11th) into ["Junior"], and use "Rising" only if explicitly stated (e.g., "Rising Seniors").
 - "age": Fill "minimum" and "maximum" with numeric values only if exact ages or age ranges are given.
 
@@ -176,9 +179,11 @@ Never infer age from grade or vice versa.
   - "priority" ("high" only for the most important application deadline, "medium"/"low" for others)
   - "term", "date", "rolling_basis", and "time" — use "not provided" if not stated.
 - "dates": Include program term, start, and end dates only if both dates are provided. Leave subfields as "not provided" if only partial data is available.
+  - Providing only the month for dates where the days aren't given is acceptable (e.g. "September 2026")
+  - If the year isn't provided, it is safe to assume that it refers to the current year
 - "duration_weeks": Use a number only if clearly stated (e.g., "6-week program" → 6); otherwise "not provided".
 
-Never derive duration from vague phrases like “a few weeks”.
+Never derive exact duration from vague phrases like “a few weeks”.
 
 4. LOCATIONS:
 - "virtual": Use:

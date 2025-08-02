@@ -185,10 +185,3 @@ class ContentSummarization:
             all_keywords = KEYWORDS[required_info]
 
         return self.truncont(contents, all_keywords, area)
-    
-    def summarize_contents(self, html_contents):
-        soup = BeautifulSoup(html_contents, features='html.parser')
-        soup = self.declutter_html(soup)
-        contents = self.clean_whitespace(soup)
-
-        return contents

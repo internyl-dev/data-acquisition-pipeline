@@ -52,3 +52,10 @@ class HTMLParsing:
         contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE)
 
         return contents
+    
+    def parse_html(self, html_contents):
+        soup = BeautifulSoup(html_contents, features='html.parser')
+        soup = self.declutter_html(soup)
+        contents = self.clean_whitespace(soup)
+
+        return contents

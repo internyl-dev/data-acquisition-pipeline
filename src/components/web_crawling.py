@@ -57,10 +57,8 @@ class WebCrawling:
                 
                 if self.is_link(url):
                     new_links[text] = url
-                    print(f"{text, url} added to new links")
 
             except Exception: 
-                print(f"{url} is not a link")
                 continue
 
 

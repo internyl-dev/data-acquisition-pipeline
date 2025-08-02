@@ -1,10 +1,11 @@
 
-from pprint import pprint
-from bs4 import BeautifulSoup
 import json
+from ast import literal_eval
 import requests
 from openai import OpenAI
 from src.components.lib.prompts import prompts
+
+from src.components.lib.logger import logger, api_log
 
 from dotenv import load_dotenv
 import os
@@ -35,17 +36,21 @@ class Client:
 
         self.prompts = prompts
 
-    def create_prompt(self, contents:BeautifulSoup|str, required_info:str):
+        self.total_completions_tokens = 0
+        self.total_prompt_tokens = 0
+        self.total_reasoning_tokens = 0
+        self.total_requests = 0
+
+    def create_prompt(self, contents:str, required_info:str):
         """
         Creates the context for the language model to extract necessary info from.
 
         Args:
-            contents (BeautifulSoup | str): Contains the contents of the webpage
+            contents (str): Contains the contents of the webpage
             required_info (str): Any valid required info section (overview, eligibility, dates, locations, costs, contact)
         
         Returns:
-            value (str): Truncated contents of the webpage and a portion of the 'overview' schema 
-            including the required info that the model needs to scrape
+            value (str): The full prompt to be sent to the model
         """
         # Create the context for the language model
         # Includes the information about the target internship
@@ -57,73 +62,15 @@ class Client:
             schema = str({required_info: self.response[required_info]})
 
         return (
-            '\nADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: '
-            + schema + '\n'
-            + '\nTARGET INTERNSHIP INFORMATION: '
-            + 'Title: ' + self.response['overview']['title'] + '\n'
-            + 'Provider: ' + self.response['overview']['provider'] + '\n'
-            + 'Description: ' + self.response['overview']['description'] + '\n'
-            + '\nWEBPAGE CONTENTS START HERE: '
-            + self.truncate_contents(contents, required_info)
+            f'ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: {schema}\n' +
+            f'TARGET PROGRAM INFORMATION:\n' +
+            f'Title: {self.response['overview']['title']}\n' +
+            f'Provider: {self.response['overview']['provider']}\n' +
+            f'Description: {self.response['overview']['description']}\n' + 
+            f'WEBPAGE CONTENTS START HERE: {contents}'
             )
 
-    def post_openrouter(self, prompt:str, context:str="You are a helpful assisstant", model:str=OPENROUTER_MODEL):
-        """
-        Sends post request to the OpenRouter completions server
-
-        Args:
-            prompt (str): The prompt to send to the model
-            model (str): The name of the model to use
-
-        Returns:
-            response (str): Output from model given prompt
-        """
-        url = "https://openrouter.ai/api/v1/chat/completions"
-
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        json={
-            "model": model,
-            "messages": [
-                {"role": "system", "content": context},
-                { "role": "user", "content": prompt}
-            ],
-            "stream": False
-        }
-
-        response = requests.post(url, headers, json)
-        return response.json()
-    
-    def post_openai(self, prompt:str, context:str="You are a helpful assistant", model:str=OPENAI_MODEL):
-        """
-        Sends post request to the OpenAI completions server
-
-        Args:
-            prompt (str): The prompt to send to the model
-            model (str): The name of the model to use
-
-        Returns:
-            response (str): Output from model given prompt
-        """
-        client = OpenAI(
-        api_key=OPENAI_API_KEY
-        )
-
-        completion = client.chat.completions.create(
-        model=model,
-        store=True,
-        messages=[
-            {"role": "system", "content": context},
-            {"role": "user", "content": prompt}
-        ]
-        )
-
-        print(completion.choices[0].message)
-
-    def post_custom_endpoint(self, prompt:str, model:str=CUSTOM_MODEL, context:str="You are a helpful assistant", url=CUSTOM_ENDPOINT_URL):
+    def post_custom_endpoint(self, prompt:str, model:str=CUSTOM_MODEL, context:str="You are a helpful assistant", url=CUSTOM_ENDPOINT_URL, log_mode:bool=False):
         """
         Sends post request to the user inputted completions server
 
@@ -140,7 +87,7 @@ class Client:
             "Content-Type": "application/json"
         }
 
-        json={
+        body={
             "model": model,
             "messages": [
                 {"role": "system", "content": context},
@@ -149,58 +96,32 @@ class Client:
             "stream": False
         }
 
-        response = requests.post(url, headers=headers, json=json)
-        return response.json(), headers | json
+        if log_mode: 
+            api_log.write(json.dumps(headers | body, indent=1) + '\n\n')
+            api_log.flush()
 
-    def validate_output(self, response:dict):
-        """
-        Determines whether or not a JSON is a valid Internyl schema
+        response = requests.post(url, headers=headers, json=body)
+        response_json = response.json()
+
+        completion_tokens = response_json["usage"]["completion_tokens"]
+        prompt_tokens = response_json["usage"]["prompt_tokens"]
+        reasoning_tokens = response_json["usage"]["completion_tokens_details"]["reasoning_tokens"]
         
-        Args:
-            response (dict): The outputted dictionary from the model or any dictionary
-        
-        Returns:
-            value (str): Outputs an empty string if the dictionary is a valid Internyl schema 
-            or a concatenated string of errors detailing the invalid parts of the response
-        """
-        if response == {'unrelated_website': True}:
-            pass
+        self.total_completions_tokens += completion_tokens
+        self.total_prompt_tokens += prompt_tokens
+        self.total_reasoning_tokens += reasoning_tokens
+        self.total_requests += 1
 
-        error = ''
+        if log_mode: 
+            logger.info(f"Prompt tokens: {prompt_tokens} | Total prompt tokens: {self.total_prompt_tokens}")
+            logger.info(f"Completion tokens: {completion_tokens} | Total completion tokens: {self.total_completions_tokens}")
+            logger.info(f"Reasoning tokens: {reasoning_tokens} | Total reasoning tokens: {self.total_reasoning_tokens}")
+            total_tokens = self.total_prompt_tokens + self.total_completions_tokens + self.total_reasoning_tokens
+            logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} | Total tokens: {total_tokens}")
+            api_log.write(json.dumps(response_json, indent=1) + '\n\n')
+            api_log.flush()
 
-        output_keys = list(response.keys())
-        output_key = output_keys[0]
-
-        if len(output_keys) > 1:
-            error += f'ERROR: multiple categories detected; {len(output_keys)} categories: {output_keys}\n'
-            error += f'Moving on to first category: {output_key}\n'
-
-        categories = list(self.response.keys())
-        if output_key not in categories:
-            return f'ERROR: invalid schema response; {output_key} is an invalid category\n'
-        
-        output_sections = list(response[output_key].keys())
-        schema_sections = list(self.response[output_key].keys())
-
-        # Get all sections in the response that are not in the schema (invalid sections)
-        invalid_sections = list(set(output_sections) - set(schema_sections))
-        
-        if invalid_sections:
-            if len(invalid_sections) > 1:
-                error += f'ERROR: invalid schema response; {invalid_sections} are invalid sections\n'
-            else:
-                error += f'ERROR: invalid schema response; {invalid_sections} is an invalid section\n'
-
-        # Get all sections in the schema that are not in the response (missing sections)
-        missing_sections = list(set(schema_sections) - set(output_sections))
-
-        if missing_sections:
-            if len(invalid_sections) > 1:
-                error += f'ERROR: invalid schema response; {missing_sections} are missing\n'
-            else:
-                error += f'ERROR: invalid schema response; {missing_sections} is missing\n'
-        
-        return error + str(response)
+        return response_json
 
     def parse_output(self, response):
         """
@@ -225,38 +146,24 @@ class Client:
         # Parse the JSON string into a Python dictionary
         try:
             parsed_response = json.loads(json_string)
-            print("Successfully parsed data:\n")
-            print(json.dumps(parsed_response, indent=2))
+            logger.info(
+                f"Successfully parsed data:\n"
+                f"{json.dumps(parsed_response, indent=2)}"
+                )
 
         except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
-            print(f"Problematic JSON string:\n{json_string}")
-            return None
+            logger.error(f"Error decoding JSON: {e}")
+            logger.error(f"Problematic JSON string:\n{json_string}")
+            logger.warning(f"Using ast.literal_eval as fallback for non-JSON syntax...")
+            try:
+                # Try fixing invalid JSON that looks like a Python dict
+                parsed_response = literal_eval(json_string)
+            except Exception as eval_error:
+                logger.error(f"ast.literal_eval failed to decode non-JSON syntax: {eval_error}")
+                return None
+            
         except KeyError as e:
-            print(f"Key error when accessing response: {e}. Check the structure of the response.")
-            return None
-
-        if parsed_response == {"unrelated_website": True}:
+            logger.error(f"Key error when accessing response: {e}. Check the structure of the response.")
             return None
         
         return parsed_response
-
-    def handle_output(self, required_info, response):
-
-        # Update for non bulk_process requirements
-        if not required_info == "all":
-            self.response[required_info].update(response[required_info])
-
-            return response
-        
-        # Update for bulk process requirements
-        for category in self.response:
-            for section in self.response[category]:
-                # The parsed response doesn't contain the categories like "overview"
-                # so we have to loop through each section in the schema and update it
-                # with the corresponding section in the parsed response
-                try:
-                    self.response[category][section] = response[section]
-                except Exception: continue
-
-                return response
