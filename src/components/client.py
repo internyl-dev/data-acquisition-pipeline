@@ -116,13 +116,13 @@ class Client:
         total_tokens = self.total_prompt_tokens + self.total_completions_tokens + self.total_reasoning_tokens
 
         if log_mode: 
-            logger.info(f"Prompt tokens: {prompt_tokens} 
+            logger.info(f"Prompt tokens: {prompt_tokens} \
                         | Total prompt tokens: {self.total_prompt_tokens}")
-            logger.info(f"Completion tokens: {completion_tokens} 
+            logger.info(f"Completion tokens: {completion_tokens} \
                         | Total completion tokens: {self.total_completions_tokens}")
-            logger.info(f"Reasoning tokens: {reasoning_tokens} 
+            logger.info(f"Reasoning tokens: {reasoning_tokens} \
                         | Total reasoning tokens: {self.total_reasoning_tokens}")
-            logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} 
+            logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} \
                         | Total tokens: {total_tokens}")
             
             api_log.write(json.dumps(response_json, indent=1) + '\n\n')
