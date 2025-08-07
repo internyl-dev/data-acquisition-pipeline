@@ -93,7 +93,8 @@ class Client:
                 {"role": "system", "content": context},
                 {"role": "user", "content": prompt}
             ],
-            "stream": False
+            "stream": False,
+            "temperature": 0.0
         }
 
         if log_mode: 
