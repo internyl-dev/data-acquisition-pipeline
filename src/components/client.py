@@ -62,15 +62,16 @@ class Client:
             schema = str({required_info: self.response[required_info]})
 
         return (
-            f'ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: {schema}\n' +
-            f'TARGET PROGRAM INFORMATION:\n' +
-            f'Title: {self.response['overview']['title']}\n' +
-            f'Provider: {self.response['overview']['provider']}\n' +
-            f'Description: {self.response['overview']['description']}\n' + 
+            f'ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA: {schema}\n'
+            f'TARGET PROGRAM INFORMATION:\n'
+            f'Title: {self.response['overview']['title']}\n'
+            f'Provider: {self.response['overview']['provider']}\n'
+            f'Description: {self.response['overview']['description']}\n'
             f'WEBPAGE CONTENTS START HERE: {contents}'
             )
 
-    def post_custom_endpoint(self, prompt:str, model:str=CUSTOM_MODEL, context:str="You are a helpful assistant", url=CUSTOM_ENDPOINT_URL, log_mode:bool=False):
+    def post_custom_endpoint(self, prompt:str, model:str=CUSTOM_MODEL, context:str="You are a helpful assistant", 
+                             url=CUSTOM_ENDPOINT_URL, log_mode:bool=False):
         """
         Sends post request to the user inputted completions server
 
@@ -112,13 +113,18 @@ class Client:
         self.total_prompt_tokens += prompt_tokens
         self.total_reasoning_tokens += reasoning_tokens
         self.total_requests += 1
+        total_tokens = self.total_prompt_tokens + self.total_completions_tokens + self.total_reasoning_tokens
 
         if log_mode: 
-            logger.info(f"Prompt tokens: {prompt_tokens} | Total prompt tokens: {self.total_prompt_tokens}")
-            logger.info(f"Completion tokens: {completion_tokens} | Total completion tokens: {self.total_completions_tokens}")
-            logger.info(f"Reasoning tokens: {reasoning_tokens} | Total reasoning tokens: {self.total_reasoning_tokens}")
-            total_tokens = self.total_prompt_tokens + self.total_completions_tokens + self.total_reasoning_tokens
-            logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} | Total tokens: {total_tokens}")
+            logger.info(f"Prompt tokens: {prompt_tokens} 
+                        | Total prompt tokens: {self.total_prompt_tokens}")
+            logger.info(f"Completion tokens: {completion_tokens} 
+                        | Total completion tokens: {self.total_completions_tokens}")
+            logger.info(f"Reasoning tokens: {reasoning_tokens} 
+                        | Total reasoning tokens: {self.total_reasoning_tokens}")
+            logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} 
+                        | Total tokens: {total_tokens}")
+            
             api_log.write(json.dumps(response_json, indent=1) + '\n\n')
             api_log.flush()
 
