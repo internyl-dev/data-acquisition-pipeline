@@ -2,7 +2,7 @@
 
 This is the repository for the backend system for the Internyl website. This backend system is responsible for finding the info used by the cards on the internship search page.
 
-Internyl Website Repo: https://github.com/cold-muffin/internyl
+Internyl Website Repo: https://github.com/internyl-dev/internyl-frontend
 <br>
 Internyl Website: https://internyl.org
 
@@ -47,29 +47,29 @@ python run.py
 The entire process is a recursive loop where we take the HTML contents of a webpage, send the HTML to an AI model to extract our target internship information, and find other links from within the webpage that may include any possible missing information. The process recurses from one of the links found in the aforementioned last step.
 
 ### Web Scraping 
-#### `src/components/web_scraping.py`
+#### `src/components/clients/playwright_client.py`
 
 Given the URL to the homepage of an internship website, we use Playwright to visit the website. Playwright then scrapes the inner body element so as to ignore unneeded script tags. 
 
 ### HTML Parsing
-#### `src/components/html_parsing.py`
+#### `src/components/utils/html_parsing.py`
 
 The HTML contents are first turned into a BeautifulSoup object for parsing. To declutter the HTML, we remove all problematic tags (eg. header, nav footer) to reduce the token count when creating the context. We then remove all unecessary and repeating whitespace to make the context more human-readable.
 
 ### Content Summarization
-#### `src/components/content_summ.py`
+#### `src/components/utils/content_summ.py`
 
 Based on the current state of the dictionary containing all of the info about the program, we determine what info is required. We then truncate the contents for lines that include keywords (found in `src/components/lib/keywords.py`), including the lines above and below the target lines. <br>
 **_NOTE:_** On the first step of the extraction loop, we perform a **bulk extraction** where we don't truncate the HTML contents.
 
 ### Client
-#### `src/components/client.py`
+#### `src/components/clients/model_client.py`
 
 The client sends a request to the endpoint specified in `.env` and retrieves the response. The prompt is usually based on which required info is being extracted at the moment (except in bulk extraction) The processed schema is then extracted from the response including any other necessary information like the prompt and completions token count for logging purposes. 
 **_NOTE:_** In bulk extraction, all required info is requested by the client at once.
 
 ### Web Crawling
-#### `src/components/web_crawling.py`
+#### `src/components/utils/web_crawling.py`
 
 If any other info is required, we retrieve all anchor elements from within the scraped HTML and look for valid links. Based on the links and the content of the anchor element, we filter the links, again for specific keywords, to look for links that potentially contain required information. Recursion again starts when we call the entire method with the new link as an argument. 
 
@@ -81,3 +81,6 @@ Used for scraping websites of HTML contents. Capable of loading JavaScript drive
 ### BeautifulSoup
 Used for processing HTML contents scraped from website. Also used in the process of truncating HTML to extract HTML around key information for the AI to use. <br>
 Truncating the HTML is important because the AI model has a limited number of usable tokens and also because the size of the HTML content can be very large for certain websites.
+
+### Firebase
+Used for storing and using the JSON data outputted from this system. 
