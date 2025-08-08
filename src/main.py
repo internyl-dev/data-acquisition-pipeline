@@ -5,43 +5,23 @@ from bs4 import BeautifulSoup
 import json
 import atexit
 
-# Import classes
-from src.components.web_scraping import WebScraping
-from src.components.html_parsing import HTMLParsing
-from src.components.content_summ import ContentSummarization
-from src.components.client import Client
-from src.components.web_crawling import WebCrawling
+from src.lib.config import Config
 
-import time
-def stopwatch(func):
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        result = func(*args, **kwargs)
-        print(f'{func.__name__}:', round(time.time() - start, 2), 'seconds')
-        return result
-    return wrapper
-
-class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
+class Main(Config):
     def __init__(self, log_mode:bool=False, headless:bool=True):
-        WebScraping.__init__(self, headless=headless)
-        HTMLParsing.__init__(self)
-        ContentSummarization.__init__(self)
-        Client.__init__(self)
-        WebCrawling.__init__(self)
+        Config.__init__(self, log_mode, headless)
 
         self.history = []
         self.queue = {}
 
         self.all_required_info = []
-
-        self.log_mode = log_mode
+        
+        self.setup_logging_main()
 
         if self.log_mode:
-            from src.components.lib.logger import logger, api_log
-            self.logger = logger
-
             # Register log file closure on exit
-            atexit.register(lambda: api_log and api_log.close())
+            atexit.register(lambda: self.api_log and self.api_log.close())
+        
 
     @staticmethod
     def get_required_info(json):
@@ -76,29 +56,6 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
 
         return required_info
 
-    def url_in_history(self, url):
-        if url in self.history:
-
-            # URL already processed: remove from queue to avoid duplicate extraction
-            removed_item = self.queue.pop(url)
-
-            self.logger.info(f"'{removed_item}' already in history, removing from queue...")
-            return True
-        
-    def max_depth_reached(self, depth):
-        if depth <= 0:
-
-            self.logger.info(f"Maximum depth recursion reached ({depth}), ending recursion...")
-            return True
-        
-    def recieved_all_required_info(self):
-        if not self.get_required_info(self.response):
-            
-            # All information already recieved, return to avoid unecessary extraction
-
-            self.logger.info(f"All required info recieved: ending recursion...")
-            return True
-
     def minimize_required_info(self, url, max_queue_length):
         if len(self.queue) > max_queue_length:
 
@@ -109,18 +66,6 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
             self.logger.info(f"High queue length ({max_queue_length}): minimizing information from {self.queue[url]} to {required_info}...\n")
             self.queue[url] = required_info
 
-    def guard_clauses(self, url, depth):
-        if self.url_in_history(url):
-            return True
-
-        if self.max_depth_reached(depth):
-            return True
-    
-        if self.recieved_all_required_info():
-            return True
-
-
-
     def run(self, url:str, depth:int=2, bulk_process = True):
 
         self.logger.debug(f"Depth: {depth}")
@@ -129,7 +74,7 @@ class Main(WebScraping, HTMLParsing, ContentSummarization, Client, WebCrawling):
         self.queue.pop(url, None)
 
         # GUARD CLAUSES
-        if self.guard_clauses(url, depth):
+        if self.guard_clauses(url, self.history, self.queue, depth, self.get_required_info, self.response):
             return
 
         # New URL: add to history for tracking and remove from queue

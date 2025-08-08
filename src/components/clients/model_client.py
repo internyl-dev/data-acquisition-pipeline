@@ -2,10 +2,7 @@
 import json
 from ast import literal_eval
 import requests
-from openai import OpenAI
-from src.components.lib.prompts import prompts
-
-from src.components.lib.logger import logger, api_log
+from src.lib.assets.prompts import PROMPTS
 
 from dotenv import load_dotenv
 import os
@@ -27,14 +24,14 @@ CUSTOM_API_KEY = os.getenv("API_KEY")
 CUSTOM_MODEL = os.getenv("MODEL")
 CUSTOM_ENDPOINT_URL = os.getenv("ENDPOINT_URL")
 
-class Client:
+class ModelClient:
     def __init__(self):
 
-        SCHEMA_FILE_PATH = "src/components/lib/schemas.json"
+        SCHEMA_FILE_PATH = "src/lib/assets/schemas.json"
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
             self.response = json.load(file)
 
-        self.prompts = prompts
+        self.prompts = PROMPTS
 
         self.total_completions_tokens = 0
         self.total_prompt_tokens = 0
@@ -98,9 +95,8 @@ class Client:
             "temperature": 0.0
         }
 
-        if log_mode: 
-            api_log.write(json.dumps(headers | body, indent=1) + '\n\n')
-            api_log.flush()
+        self.api_log.write(json.dumps(headers | body, indent=1) + '\n\n')
+        self.api_log.flush()
 
         response = requests.post(url, headers=headers, json=body)
         response_json = response.json()
@@ -115,18 +111,17 @@ class Client:
         self.total_requests += 1
         total_tokens = self.total_prompt_tokens + self.total_completions_tokens + self.total_reasoning_tokens
 
-        if log_mode: 
-            logger.info(f"Prompt tokens: {prompt_tokens} \
-                        | Total prompt tokens: {self.total_prompt_tokens}")
-            logger.info(f"Completion tokens: {completion_tokens} \
-                        | Total completion tokens: {self.total_completions_tokens}")
-            logger.info(f"Reasoning tokens: {reasoning_tokens} \
-                        | Total reasoning tokens: {self.total_reasoning_tokens}")
-            logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} \
-                        | Total tokens: {total_tokens}")
-            
-            api_log.write(json.dumps(response_json, indent=1) + '\n\n')
-            api_log.flush()
+        self.logger.info(f"Prompt tokens: {prompt_tokens} \
+                    | Total prompt tokens: {self.total_prompt_tokens}")
+        self.logger.info(f"Completion tokens: {completion_tokens} \
+                    | Total completion tokens: {self.total_completions_tokens}")
+        self.logger.info(f"Reasoning tokens: {reasoning_tokens} \
+                    | Total reasoning tokens: {self.total_reasoning_tokens}")
+        self.logger.info(f"Total tokens in this request: {prompt_tokens + completion_tokens + reasoning_tokens} \
+                    | Total tokens: {total_tokens}")
+        
+        self.api_log.write(json.dumps(response_json, indent=1) + '\n\n')
+        self.api_log.flush()
 
         return response_json
 
@@ -153,24 +148,24 @@ class Client:
         # Parse the JSON string into a Python dictionary
         try:
             parsed_response = json.loads(json_string)
-            logger.info(
+            self.logger.info(
                 f"Successfully parsed data:\n"
                 f"{json.dumps(parsed_response, indent=2)}"
                 )
 
         except json.JSONDecodeError as e:
-            logger.error(f"Error decoding JSON: {e}")
-            logger.error(f"Problematic JSON string:\n{json_string}")
-            logger.warning(f"Using ast.literal_eval as fallback for non-JSON syntax...")
+            self.logger.error(f"Error decoding JSON: {e}")
+            self.logger.error(f"Problematic JSON string:\n{json_string}")
+            self.logger.warning(f"Using ast.literal_eval as fallback for non-JSON syntax...")
             try:
                 # Try fixing invalid JSON that looks like a Python dict
                 parsed_response = literal_eval(json_string)
             except Exception as eval_error:
-                logger.error(f"ast.literal_eval failed to decode non-JSON syntax: {eval_error}")
+                self.logger.error(f"ast.literal_eval failed to decode non-JSON syntax: {eval_error}")
                 return None
             
         except KeyError as e:
-            logger.error(f"Key error when accessing response: {e}. Check the structure of the response.")
+            self.logger.error(f"Key error when accessing response: {e}. Check the structure of the response.")
             return None
         
         return parsed_response

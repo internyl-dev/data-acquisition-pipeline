@@ -1,11 +1,9 @@
 
 import re
 from bs4 import BeautifulSoup
-from src.components.lib.keywords import KEYWORDS
+from src.lib.assets.keywords import KEYWORDS
 
 class ContentSummarization:
-    def __init__(self):
-        pass
 
     @staticmethod
     def pluralize(word:str):

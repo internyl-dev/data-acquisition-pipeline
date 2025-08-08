@@ -2,14 +2,14 @@
 import subprocess
 import platform
 
-BAT_SETUP_PATH = "setup/setup.bat"
-SH_SETUP_PATH = "setup/setup.sh"
+BAT_SETUP_PATH = "setup\setup.bat"
+SH_SETUP_PATH = "setup\setup.sh"
 
 operating_system = platform.system()
 
 if operating_system == "Windows":
     try:
-        result = subprocess.run([BAT_SETUP_PATH], capture_output=True, text=True, check=True)
+        result = subprocess.run(BAT_SETUP_PATH, capture_output=True, text=True, check=True)
         print("Batch file executed successfully.")
         print("Output:", result.stdout)
         if result.stderr:
