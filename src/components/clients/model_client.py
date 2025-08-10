@@ -169,3 +169,42 @@ class ModelClient:
             return None
         
         return parsed_response
+    
+    def model_client_main(self, url:str, contents:str, bulk_process:bool):
+
+        for required_info in self.all_required_info:
+
+            if bulk_process:
+                self.logger.debug("Overriding previous statement, instead performing bulk extraction...")
+                required_info = "all"
+                self.response['overview'].update({'link': url})
+
+            # CONTENT SUMMARIZATION
+            contents = self.truncate_contents(contents, required_info)
+
+            prompt = self.create_prompt(contents, required_info)
+            
+            # Send AI a POST request asking to fill out schema chunks and update full schema
+            self.logger.info("Sending request...")
+            response = self.post_custom_endpoint(prompt=prompt, context=self.prompts[required_info], log_mode=self.log_mode)
+
+            self.logger.info('Recieved response!')
+
+            parsed_data = self.parse_output(response)
+
+            if ("unrelated_website" in parsed_data):
+                self.logger.warning(f"Unrelated website detected (URL: {url}), ending recursion...")
+                return
+            
+            # parse_output returns None if the output from the model can't be parsed as a dictionary
+            if (not parsed_data):
+                return
+            
+            # Update the response based on the method of extraction
+            if bulk_process: 
+                self.response = parsed_data
+                break
+                # End loop
+ 
+            self.response.update(parsed_data)
+            # Continue loop

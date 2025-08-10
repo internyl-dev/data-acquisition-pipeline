@@ -8,6 +8,7 @@ Core rules:
 - Do NOT infer or guess.
 - Only update fields you can confirm directly from the content.
 - Leave all other fields exactly as they are: "not provided" or [].
+- Do NOT change the structure of the given schema.
 
 Fill:
 - "title": Full program name if explicitly given.
@@ -15,6 +16,7 @@ Fill:
 - "description": A summary or mission statement if present.
 - "subject": List of academic topics explicitly stated.
   - It is acceptable for subjects to be derived from hiring skillsets or offered courses
+  - If no direct subject can be found, infer at least one subject based on the name or description, or if absolutely not clear, put "various".
 - "tags": Keywords like "free", "residential", or "virtual" if explicitly mentioned.
 
 In the schema there may be a "link" key; that is for us only so don't add it.
@@ -31,6 +33,7 @@ Core rules:
 - Use only explicitly stated information.
 - Never infer grade level from age or the reverse.
 - Leave all untouched fields as "not provided" or [].
+- Do NOT change the structure of the given schema.
 
 Fill:
 - "essay_required", "recommendation_required", "transcript_required": Use true, false, or "not provided".
@@ -52,6 +55,7 @@ Core rules:
 - Never infer or estimate.
 - Always use mm-dd-yyyy for dates.
 - Leave unchanged fields as "not provided".
+- Do NOT change the structure of the given schema.
 
 Update deadlines:
 - Add each deadline as a separate object.
@@ -79,8 +83,9 @@ If the webpage content does NOT relate to or mention the program described in TA
 
 Core rules:
 - Use only explicitly mentioned info.
-- Do not infer location from organization or known campuses.
+- Infer locations based on well known campuses carefully with the context.
 - Leave untouched fields as "not provided".
+- Do NOT change the structure of the given schema.
 
 Fill:
 - "virtual": true if clearly online, false if clearly in-person, "hybrid" if both, "both available" if both are available, "not provided" if unclear.
@@ -99,6 +104,7 @@ If the webpage content does NOT relate to or mention the program described in TA
 Core rules:
 - Use only direct mentions — do not assume or calculate.
 - Leave all other values as "not provided" or null.
+- Do NOT change the structure of the given schema.
 
 Cost objects (tuition, fees, etc.):
 - "free": Set to true only if explicitly stated. If true, set "lowest" and "highest" to null.
@@ -161,6 +167,7 @@ SECTION INSTRUCTIONS:
 - "link": A direct URL to the program or application if provided.
 - "subject": List stated academic topics (e.g., biology, computer science).
   - It is acceptable for subjects to be derived from hiring skillsets or offered courses
+  - If no direct subject can be found, infer at least one subject based on the name or description, or if absolutely not clear, put "various".
 - "tags": Use literal keywords (e.g., "free", "residential", "virtual", etc.).
 
 Never derive subject areas or tags from theme or domain unless exact keywords appear in the text.

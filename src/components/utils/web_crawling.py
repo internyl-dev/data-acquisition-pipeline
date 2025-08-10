@@ -107,3 +107,23 @@ class WebCrawling:
             if not url[-1] == '/':
                 url += '/'
             return url + link
+        
+    def web_crawling_main(self, url:str, all_links:dict):
+        for required_info in self.all_required_info:
+            filtered_links = self.filter_links(all_links, required_info)
+
+            for link in filtered_links.values():
+                link = self.process_link(url, link)
+
+                # Skip links we've already visited
+                if link in self.history:
+                    continue
+
+                # If link is in queue: add info if it was not already there
+                elif link in self.queue:
+                    if required_info not in self.queue[link]:
+                        self.queue[link].append(required_info)
+
+                # Link is not in history or queue: add it into the queue
+                else:
+                    self.queue[link] = [required_info]

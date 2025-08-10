@@ -6,7 +6,7 @@ from pprint import pp
 Instance = Main(log_mode=True)
 
 # Input link to extract info from
-Instance.run('https://www.metmuseum.org/about-the-met/internships/high-school/school-year-high-school-internships')
+Instance.run('https://www.newschool.edu/parsons/youth-precollege-summer/')
 Instance.logger.info(json.dumps(Instance.response, indent=1))
 pp(Instance.response)
 
