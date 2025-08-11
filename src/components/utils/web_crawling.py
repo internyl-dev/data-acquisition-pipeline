@@ -1,5 +1,6 @@
 
 import re
+import json
 from bs4 import BeautifulSoup
 from src.lib.assets.keywords import KEYWORDS
 
@@ -33,6 +34,29 @@ class WebCrawling:
             r')$',
         )
         return bool(pattern.match(s))
+    
+    @staticmethod
+    def process_link(url:str, link:str):
+        """
+        Takes the contents of any HREF assuming that the HREF is an absolute or relative path to a webpage and turns it in an absolute link.
+
+        Args:
+            url (str): Absolute webpage URL from which any relative links will be joined with
+            link (str): Absolute or relative URL
+
+        Returns:
+            value (str): Either the absolute URL result from joining a given absolute URL and relative URL or just the newly given absolute URL.
+        """
+        if link[0] == '/':
+            return '/'.join(url.split('/')[0:3]) + link
+
+        elif link[0:7] == 'http://' or link[0:8] == 'https://':
+            return link
+
+        elif link[-1] == '/':
+            if not url[-1] == '/':
+                url += '/'
+            return url + link
 
     def get_all_links(self, soup:BeautifulSoup):
         """
@@ -63,6 +87,40 @@ class WebCrawling:
 
 
         return new_links
+    
+    def weigh_links_keywords(self, response:dict, all_links:dict):
+        weighed_queue = {}
+
+        # Split title based on the delimitters ' ' and '-'
+        title_keywords = re.split(' |-', response['overview']['title'])
+
+        matches = 0
+        for link in all_links:
+
+            for title_keyword in title_keywords:
+                if re.search(fr'{title_keyword}', link, re.I):
+                    matches += 1
+                if re.search(fr'{title_keyword}', all_links[link], re.I):
+                    matches += 1
+            
+            if not weighed_queue:
+                weighed_queue[link] = (all_links[link], matches)
+            else:
+                for key in weighed_queue:
+                    if matches < weighed_queue[key][1]:
+                        continue
+                    items = list(weighed_queue.items())
+                    position = list(weighed_queue.keys()).index(key)
+                    items.insert(position, (link, (all_links[link], matches)))
+                    weighed_queue = dict(items)
+                    break
+            
+            matches = 0
+        
+        return weighed_queue
+
+    def weigh_links_url(self, all_links:dict):
+        pass
 
     def filter_links(self, links:dict, required_info:str):
         """
@@ -84,31 +142,14 @@ class WebCrawling:
                     filtered_links[content] = links[content]
         
         return filtered_links
-    
-    @staticmethod
-    def process_link(url:str, link:str):
-        """
-        Takes the contents of any HREF assuming that the HREF is an absolute or relative path to a webpage and turns it in an absolute link.
-
-        Args:
-            url (str): Absolute webpage URL from which any relative links will be joined with
-            link (str): Absolute or relative URL
-
-        Returns:
-            value (str): Either the absolute URL result from joining a given absolute URL and relative URL or just the newly given absolute URL.
-        """
-        if link[0] == '/':
-            return '/'.join(url.split('/')[0:3]) + link
-
-        elif link[0:7] == 'http://' or link[0:8] == 'https://':
-            return link
-
-        elif link[-1] == '/':
-            if not url[-1] == '/':
-                url += '/'
-            return url + link
         
-    def web_crawling_main(self, url:str, all_links:dict):
+    def web_crawling_main(self, raw_html:str, url:str):
+        # ... Obtained new required information
+
+        # Get all links from within the raw HTML
+        all_links = self.get_all_links(BeautifulSoup(raw_html, features='html.parser'))
+        self.logger.debug(f'All links:\n{json.dumps(all_links)}')
+
         for required_info in self.all_required_info:
             filtered_links = self.filter_links(all_links, required_info)
 
@@ -127,3 +168,11 @@ class WebCrawling:
                 # Link is not in history or queue: add it into the queue
                 else:
                     self.queue[link] = [required_info]
+
+        # Send the excessively large queue to the model
+        # to remove unecessary links
+        if len(self.queue) >= 5:
+            self.logger.debug(f"Excessively large queue size detected: sending request to model...")
+            self.model_eval_links()
+
+        # Recursing ...

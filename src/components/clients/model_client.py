@@ -66,9 +66,15 @@ class ModelClient:
             f'Description: {self.response['overview']['description']}\n'
             f'WEBPAGE CONTENTS START HERE: {contents}'
             )
+    
+    def create_link_eval_prompt(self):
+        return (
+            f'PROGRAM INFO: {self.response}'
+            f'QUEUE HERE: {self.queue}'
+        )
 
     def post_custom_endpoint(self, prompt:str, model:str=CUSTOM_MODEL, context:str="You are a helpful assistant", 
-                             url=CUSTOM_ENDPOINT_URL, log_mode:bool=False):
+                             url=CUSTOM_ENDPOINT_URL):
         """
         Sends post request to the user inputted completions server
 
@@ -98,7 +104,9 @@ class ModelClient:
         self.api_log.write(json.dumps(headers | body, indent=1) + '\n\n')
         self.api_log.flush()
 
+        self.logger.info("Sending request...")
         response = requests.post(url, headers=headers, json=body)
+        self.logger.info('Recieved response!')
         response_json = response.json()
 
         completion_tokens = response_json["usage"]["completion_tokens"]
@@ -124,6 +132,11 @@ class ModelClient:
         self.api_log.flush()
 
         return response_json
+    
+    def model_eval_links(self):
+        prompt = self.create_link_eval_prompt()
+        response = self.post_custom_endpoint(prompt=prompt, context=PROMPTS["evaluate_links"])
+        self.queue = self.parse_output(response)
 
     def parse_output(self, response):
         """
@@ -185,11 +198,7 @@ class ModelClient:
             prompt = self.create_prompt(contents, required_info)
             
             # Send AI a POST request asking to fill out schema chunks and update full schema
-            self.logger.info("Sending request...")
-            response = self.post_custom_endpoint(prompt=prompt, context=self.prompts[required_info], log_mode=self.log_mode)
-
-            self.logger.info('Recieved response!')
-
+            response = self.post_custom_endpoint(prompt=prompt, context=self.prompts[required_info])
             parsed_data = self.parse_output(response)
 
             if ("unrelated_website" in parsed_data):

@@ -234,5 +234,25 @@ Summer High School Internships\nThe Met High School Internship Program offers pa
 
 EXPECTED OUTPUT:
 {"overview":{"title":"High School Internship Program","provider":"The Met","description":"The Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.","link":"not provided","subject":[],"tags":["paid"]},"eligibility":{"essay_required":true,"recommendation_required":true,"transcript_required":"not provided","other":["Must be in grades 10 or 11 or obtaining their High School Equivalency degree","Must reside in or attend a high school or home school in New York, New Jersey, or Connecticut on the application deadline date","Interviews are required for finalists only"],"grades":["Sophomore","Junior"],"age":{"minimum":"not provided","maximum":"not provided"}},"dates":{"deadlines":[{"name":"Application Deadline","priority":"high","term":"Summer 2025","date":"03-07-2025","rolling_basis":false,"time":"6:00 PM"},{"name":"Interview Notification","priority":"medium","term":"Summer 2025","date":"04-18-2025","rolling_basis":false,"time":"not provided"}],"dates":[{"term":"Summer 2025","start":"07-07-2025","end":"08-08-2025"}],"duration_weeks":"not provided"},"locations":{"virtual":false,"state":"not provided","city":"not provided","address":"not provided"},"costs":{"costs":[],"stipend":{"available":true,"amount":null}},"contact":{"email":"highschoolinterns@metmuseum.org","phone":"not provided"}}
+""",
+
+    "evaluate_links": """
+You are given a dictionary after the line: QUEUE HERE.
+You are also given a partially filled JSON schema after PROGRAM INFO.
+The dictionary represents a queue to go through links for web crawling purposes needed to find information to completely fill the partially filled JSON schema.
+Your job is to go through the the link contents (key) and the URLs (value) and remove all the links that likely wouldn't contain the needed information.
+You will send the dictionary back which will be parsed into a dictionary that will represent the links that likely have information related to the program in the partially filled JSON schema.
+
+Core rules:
+- If a link looks like it points to the admissions for a university, and not the program, it can be removed.
+- If a link leads to any links similar to a:
+  1. Google Drive
+  2. Video (Youtube, Vimeo, etc.)
+  3. PDF
+  4. Completely unrelated website (unless it is a Google Form)
+  It can be removed.
+
+Don't add any links and be very conservative with the link removing process. 
+Don't be afraid to remove every link from the queue if it's obvious none of them are needed, in that case return an empty dictionary.
 """
 }

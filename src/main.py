@@ -20,7 +20,11 @@ class Main(Config):
             # Register log file closure on exit
             atexit.register(lambda: self.api_log and self.api_log.close())
 
-    def run(self, url:str, depth:int=3, bulk_process:bool=True):
+    def run(self, url:str, depth:int=2, bulk_process:bool=True, first_run=True):
+        
+        if first_run:
+            self.url = url
+            first_run = False
 
         self.logger.debug(f"Depth: {depth}")
         self.logger.info(f"Beginning to scrape '{url}'...")
@@ -65,17 +69,13 @@ class Main(Config):
         # Check for required info after the new information has been added
         self.all_required_info = self.get_required_info()
         self.logger.debug(f'The following info is still required: {self.all_required_info}')
-        
-        # Get all links from within the raw HTML
-        all_links = self.get_all_links(BeautifulSoup(raw_html, features='html.parser'))
-        self.logger.debug(f'All links:\n{json.dumps(all_links)}')
 
         # WEB CRAWLING
         # 1. Filter links based on keywords in the content or the URL
         # 2. Check if link is in history, continue iterating without changing the queue if it is
         # 3. Check if link is already in queue, add information if it is
         # 4. Else add link and required info to queue
-        self.web_crawling_main(url, all_links)
+        self.web_crawling_main(raw_html, url)
         self.logger.debug(f"Updated queue:\n{json.dumps(self.queue, indent=1)}")
 
         while self.queue and depth > 1:

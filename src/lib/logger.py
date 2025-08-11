@@ -2,6 +2,7 @@
 import logging
 import datetime
 import os
+from pprint import pp
 
 class Logger:
     def __init__(self, log_mode):
@@ -52,12 +53,15 @@ class Logger:
                     return
                 
                 if kwargs.get("message", False):
-                    func(kwargs["message"])
-                    return
+                    message = kwargs["message"]
                 
                 if args:
-                    func(args[0])
-                    return
+                    message = args[0]
+
+                func(message)
+                pp(message)
+                return
+                
             return wrapper
 
         self.logger.debug = log_mode_guard(self.logger.debug)

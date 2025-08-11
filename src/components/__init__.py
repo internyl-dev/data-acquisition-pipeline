@@ -5,4 +5,5 @@ from .utils.required_info import RequiredInfo
 from .utils.content_summ import ContentSummarization
 from .clients.model_client import ModelClient
 from .utils.web_crawling import WebCrawling
+from .utils.schema_cleanup import SchemaCleanup
 from .clients.firebase_client import FirebaseClient
