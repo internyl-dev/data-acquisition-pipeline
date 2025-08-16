@@ -7,7 +7,7 @@ class FirebaseClient:
     def __init__(self):
 
         # Replace with the actual path
-        cred = credentials.Certificate("")
+        cred = credentials.Certificate("C:/Users/efrat/Downloads/internyl-firebase-admin-sdk.json")
         firebase_admin.initialize_app(cred)
 
         # Get a Firestore client

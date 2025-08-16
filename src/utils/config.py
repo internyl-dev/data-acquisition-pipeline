@@ -1,8 +1,8 @@
 
-from src.components import *
+from src.core import *
 
-from src.lib.guards import Guards
-from src.lib.logger import Logger
+from . import Guards
+from . import Logger
 
 class Config(WebScraping, HTMLParsing, RequiredInfo, ContentSummarization, ModelClient, WebCrawling, FirebaseClient, SchemaCleanup, Guards, Logger):
     def __init__(self, log_mode, headless):

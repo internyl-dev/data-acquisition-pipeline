@@ -1,6 +1,5 @@
 
-import re
-from src.lib.assets.state_abbrev import STATE_ABBREVIATIONS
+from ...assets import STATE_ABBREVIATIONS
 
 class SchemaCleanup:
 
@@ -10,7 +9,7 @@ class SchemaCleanup:
         # If no subjects were found but for some reason
         # the model didn't include "Various"
         if not overview['subjects']:
-            overview['subjects'] = ['Various']
+            overview['subject'] = ['Various']
 
     def cleanup_eligibility(self):
         eligibility = self.response['eligibility']

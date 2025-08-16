@@ -2,7 +2,7 @@
 import json
 from ast import literal_eval
 import requests
-from src.lib.assets.prompts import PROMPTS
+from ...assets import PROMPTS
 
 from dotenv import load_dotenv
 import os
@@ -27,7 +27,7 @@ CUSTOM_ENDPOINT_URL = os.getenv("ENDPOINT_URL")
 class ModelClient:
     def __init__(self):
 
-        SCHEMA_FILE_PATH = "src/lib/assets/schemas.json"
+        SCHEMA_FILE_PATH = "src/assets/schemas.json"
         with open(SCHEMA_FILE_PATH, 'r', encoding='utf-8') as file:
             self.response = json.load(file)
 
@@ -136,7 +136,9 @@ class ModelClient:
     def model_eval_links(self):
         prompt = self.create_link_eval_prompt()
         response = self.post_custom_endpoint(prompt=prompt, context=PROMPTS["evaluate_links"])
-        self.queue = self.parse_output(response)
+        new_queue = self.parse_output(response)
+        self.history.extend(list(set(self.queue.keys()) - set(new_queue.keys()))) # Get differences between dicts
+        self.queue.update(new_queue)
 
     def parse_output(self, response):
         """

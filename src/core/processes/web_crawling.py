@@ -2,7 +2,7 @@
 import re
 import json
 from bs4 import BeautifulSoup
-from src.lib.assets.keywords import KEYWORDS
+from ...assets import KEYWORDS
 
 class WebCrawling:
     def __init__(self):

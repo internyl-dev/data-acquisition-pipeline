@@ -1,11 +1,10 @@
 
 import asyncio
-from bs4 import BeautifulSoup
 
 import json
 import atexit
 
-from src.lib.config import Config
+from .utils.config import Config
 
 class Main(Config):
     def __init__(self, log_mode:bool=False, headless:bool=True):
