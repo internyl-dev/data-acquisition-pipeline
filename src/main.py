@@ -4,11 +4,11 @@ import asyncio
 import json
 import atexit
 
-from .utils.config import Config
+from .utils.base import Base
 
-class Main(Config):
+class Main(Base):
     def __init__(self, log_mode:bool=False, headless:bool=True):
-        Config.__init__(self, log_mode, headless)
+        Base.__init__(self, log_mode, headless)
 
         self.history = []
         self.queue = {}

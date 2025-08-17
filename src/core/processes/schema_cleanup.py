@@ -8,7 +8,7 @@ class SchemaCleanup:
 
         # If no subjects were found but for some reason
         # the model didn't include "Various"
-        if not overview['subjects']:
+        if not overview['subject']:
             overview['subject'] = ['Various']
 
     def cleanup_eligibility(self):

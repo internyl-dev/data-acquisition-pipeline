@@ -10,6 +10,7 @@ class HTMLParsing:
     def declutter_html(soup:BeautifulSoup):
         """
         Removes all HTML elements from BeautifulSoup object that would clutter the page contents.
+        These elements
 
         Args:
             soup (BeautifulSoup): Contains the HTML contents of the page

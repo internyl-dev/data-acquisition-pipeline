@@ -68,6 +68,11 @@ class ModelClient:
             )
     
     def create_link_eval_prompt(self):
+        """
+        Creates prompt for the AI link evaluation portion.
+        Part of the model_eval_links method which combines this and post_custom_endpoint
+        along with a few other functions.
+        """
         return (
             f'PROGRAM INFO: {self.response}'
             f'QUEUE HERE: {self.queue}'
@@ -134,6 +139,10 @@ class ModelClient:
         return response_json
     
     def model_eval_links(self):
+        """
+        Have the model evaluate the queue in its current state to remove unnecessary links, saving time and tokens.
+        This also adds the links to history, skipping past then in future queue building.
+        """
         prompt = self.create_link_eval_prompt()
         response = self.post_custom_endpoint(prompt=prompt, context=PROMPTS["evaluate_links"])
         new_queue = self.parse_output(response)
@@ -142,13 +151,14 @@ class ModelClient:
 
     def parse_output(self, response):
         """
-        Takes the response from the model and extracts the JSON output and parses it.
+        Takes the response from the model, extracts the JSON output and parses it.
+        Returns `None` and logs an error if it failed to parse the response into a valid dictionary.
         Args:
             response (str): The response from the model
 
         Returns:
             value (dict or None): The dictionary response from the model assuming it returned a dictionary 
-            or None if the response isn't a dictionary or if the response is {"unrelated_website": True}
+            or None if the response isn't a dictionary.
         """
         # Access the raw content string
         raw_content_string = response["choices"][0]["message"]["content"]

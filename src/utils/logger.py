@@ -2,6 +2,7 @@
 import logging
 import datetime
 import os
+import sys
 from pprint import pp
 
 class Logger:
@@ -15,8 +16,22 @@ class Logger:
         self.logger.setLevel(logging.DEBUG)
 
     def create_logging_files(self):
+        """
+        Sets up the logging files if log mode was turned on when setting up the instance.
+        """
         if not self.log_mode:
             return
+        
+        if os.path.isdir(self.LOGS_DIR_PATH):
+            self.logger.info(f"Path '{self.LOGS_DIR_PATH}' does not exist. Attempting to create directory...")
+        
+        try:
+            os.makedirs(self.LOGS_DIR_PATH, exist_ok=True)
+            self.logger.info(f"Either path '{self.LOGS_DIR_PATH} exists or it was created.\n"
+                             "Either way this message indicates that the logging system is functional thusfar.")
+        except OSError as e:
+            self.logger.critical(f"Error creating directory '{self.LOGS_DIR_PATH}': {e}\nExiting program...")
+            sys.exit()
 
         # Create datetime folder
         time_now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -44,6 +59,10 @@ class Logger:
 
 
     def apply_conditional_logging(self):
+        """
+        Creates and applies a wrapper to every single `logging` method to write the output into a logging file
+        and `pp` the message into the terminal.
+        """
         if not hasattr(self, 'logger'):
             return
             
