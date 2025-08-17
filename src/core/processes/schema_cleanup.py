@@ -20,7 +20,7 @@ class SchemaCleanup:
     def cleanup_locations(self):
         locations = self.response['locations']
 
-        for location in locations:
+        for location in locations['locations']:
 
             for abbreviation in STATE_ABBREVIATIONS:
                 location['state'] = location['state'].replace(abbreviation, STATE_ABBREVIATIONS[abbreviation])
@@ -32,9 +32,19 @@ class SchemaCleanup:
         # were included as 0
         for cost in costs['costs']:
 
+            # Exit to avoid error
+            if not cost:
+                break
+
             if cost['lowest'] == 0 and cost['highest'] == 0:
                 cost['lowest'], cost['highest'] = (None, None)
                 cost['free'] = True
+        
+        # If stipend is available
+        # and marked as null
+        stipend = costs['stipend']
+        if (stipend['available'] == True) and (stipend['amount'] == None):
+            stipend['amount'] = "not provided"
 
         # If costs were included but
         # they weren't marked as not free
@@ -42,9 +52,6 @@ class SchemaCleanup:
 
             if any((isinstance(x, float) or isinstance(x, int)) for x in (cost['lowest'], cost['highest'])):
                 cost['free'] = False
-        
-        if (cost['stipend']['available'] == True):
-            cost['stipend']['amount'] = None
                 
     def cleanup_contact(self):
         contact = self.response['contact']

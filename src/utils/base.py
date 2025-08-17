@@ -7,6 +7,8 @@ from . import Logger
 class Base(WebScraping, HTMLParsing, RequiredInfo, ContentSummarization, ModelClient, WebCrawling, FirebaseClient, SchemaCleanup, Guards, Logger):
     def __init__(self, log_mode, headless):
 
+        Logger.__init__(self, log_mode)
+
         WebScraping.__init__(self, headless)
         HTMLParsing.__init__(self)
         RequiredInfo.__init__(self)
@@ -16,4 +18,3 @@ class Base(WebScraping, HTMLParsing, RequiredInfo, ContentSummarization, ModelCl
         SchemaCleanup.__init__(self)
         FirebaseClient.__init__(self)
         Guards.__init__(self)
-        Logger.__init__(self, log_mode)
