@@ -114,6 +114,8 @@ Cost objects (tuition, fees, etc.):
 Stipend:
 - "available": true only if explicitly mentioned, false if clearly absent.
 - "amount": Use number if stated. If "available" is false, set to null.
+  - If rate is given, for example hourly or per session, write the amount and the rate (eg. 16.50 per hour, 200 per week, 100 per session)
+  - If the amount for the entire program can be calculated explicitly given the rate and amount of sessions, calculate that and return it (eg. 100 per session, 7 sessions -> 700)
 
 Include each cost type as a separate object if multiple are mentioned.
 """,
