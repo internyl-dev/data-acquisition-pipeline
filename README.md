@@ -16,9 +16,11 @@ Internyl Website: https://internyl.org
   - [Content Summarization](#content-summarization)
   - [Client](#client)
   - [Web Crawling](#web-crawling)
-3. [Tech Used](#development)
+3. [Tech Used](#tech-used)
   - [Playwright](#playwright)
-  - [BeautifulSoup](#bs4)
+  - [BeautifulSoup](#beautifulsoup)
+  - [Firebase](#firebase)
+4. [Reflection](#reflection)
 
 ## How to use
 
@@ -80,3 +82,10 @@ Truncating the HTML is important because the AI model has a limited number of us
 
 ### Firebase
 Used for storing and using the JSON data outputted from this system. 
+
+# Reflection
+### !!! Be prepared for a wall of text !!!
+#### 8/20/2025
+This was the first AI system I've made and implemented in an AI project and thus there were a lot of mistakes that I've made in the development of this project and just as many lessons that I've learned. The mistake that kept haunting me the most throughout the development of this project is the lack of planning or more specifically the failure to realize the importance of a predicted case. When I first thought of the idea for this project, I thought it would be easy, just get the HTML contents of a website, feed it to an AI, and display the output. In essence, that is the project and the simplest case, but I'd soon learn in the middle of development that this was only the ideal. In reality, websites rarely put all of their information in one webpage; it was usually scattered around multiple webpages. Already I had to go back to the drawing board and implement a web crawling system. This is just one example of the hiccups that I went through when making this project, and believe me there were many. Every time I had to go back to drawing new flowcharts the lesson echoes in my head: you should have planned ahead. Inevitably there were a few cases that I probably couldn't have planned ahead but the development of this system would have been a lot faster and smoother if I had better foresight. The great thing about a mistake is that if you take it to heart you learn from it and thus I have the foresight to plan every meticulous detail ahead. <br><br>
+There are so many other mistakes and trip-ups that I could talk about but in my opinion the lack of foresight was the biggest and most impactful. Despite my inexperience making large projects like this since this is my first, a lot of things went well but what I'm most proud of is how much I've learned in this project. I'm much more familiar with the python ecosystem and programming standards, especially folder structure which I did not appreciate until now. Despite all that I have learned I still have an immense amount to learn which I will tackle as I continue developing this system and create future projects. <br><br>
+This project is in its very, very early stages. I have a lot more plans and ideas for the Internyl website which I can implement once I start collecting data for these programs. The data will be kept in the Firestore and analyzed in the future to add exciting features like date prediction, cost prediction, acceptance rates, and other data which isn't available on the program website. At the time of writing this the Alpha development has started and the website is online but very crudely functional. I will continue to develop and refine this system and learn more about AI and its applications. The future looks exciting not only for the development of Internyl but for the development of AI as an industry.
