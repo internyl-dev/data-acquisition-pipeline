@@ -41,7 +41,11 @@ class Main(Base):
 
         # WEB SCRAPING
         # Using Playwright, we scrape the HTML contents from a url and get the inner text
-        raw_html = asyncio.run(self.scrape_html(url))
+        try:
+            raw_html = asyncio.run(self.scrape_html(url))
+        except Exception as e:
+            self.logger.error(e)
+            return
 
         # HTML PARSING
         # 1. Remove unecessary bloating HTML elements from the raw html
