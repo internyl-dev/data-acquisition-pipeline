@@ -1,12 +1,10 @@
 
 import re
 from bs4 import BeautifulSoup
-from ...assets import KEYWORDS
 
 class ContentSummarization:
 
-    @staticmethod
-    def pluralize(word:str):
+    def pluralize(self, word:str):
         """
         Takes a word and turns it into its plural form
 
@@ -27,8 +25,7 @@ class ContentSummarization:
             # default: 's'
             return fr'\b{word}(s)?\b'
 
-    @staticmethod
-    def find_emails(contents:str):
+    def find_emails(self, contents:str):
         """
         Finds and returns all emails found in a string
 
@@ -40,8 +37,7 @@ class ContentSummarization:
         """
         return re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", contents, re.I)
 
-    @staticmethod
-    def find_phone_numbers(contents:str):
+    def find_phone_numbers(self, contents:str):
         """
         Finds and returns all phone numbers found in a string
 
@@ -66,8 +62,7 @@ class ContentSummarization:
         
         return re.findall(phone_pattern, contents)
 
-    @staticmethod
-    def find_dates(contents:str):
+    def find_dates(self, contents:str):
         """
         Finds and returns all dates found in a string
 

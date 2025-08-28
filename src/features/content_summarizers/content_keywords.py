@@ -1,5 +1,5 @@
 
-KEYWORDS = {
+CONTENT_KEYWORDS = {
     'overview': [
         'overview',
 
@@ -68,41 +68,5 @@ KEYWORDS = {
         'get in touch',
         'mailto:'
     ],
-
-    'link' : {
-        'overview': [
-            'overview', 'learn'
-        ],
-
-        'eligibility': [
-            'eligibility', 'apply', 'requirements', 'eligible',
-            'admission', 'criteria', 'qualification',
-            'qualify', 'selection', 'info',
-            'faq', 'frequently asked questions', 'frequently-asked-questions'
-        ],
-
-        'dates': [
-            'deadline', 'apply', 'date', 'timeline',
-            'schedule',
-            'round', 'cutoff',
-            'faq', 'frequently asked questions', 'frequently-asked-questions'
-        ],
-
-        'locations': [
-            'locations', 'address', 'campus',
-            'faq', 'frequently asked questions', 'frequently-asked-questions'
-        ],
-
-        'costs': [
-            'cost', 'tuition', 'fee', 'expenses', 'financial', 'price', 'payment',
-            'scholarship', 'funding', 'free', 'stipend',
-            'affordability', 'support', 'aid', 'grant',
-            'faq', 'frequently asked questions', 'frequently-asked-questions'
-        ],
-
-        'contact': [
-            'contact', 'email', 'get in touch', 'get-in-touch'
-        ]
-    }
 }
 # still need more kw + need to support searching for all these keywords with truncate_html.py
