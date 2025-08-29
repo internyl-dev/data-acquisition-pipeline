@@ -13,6 +13,8 @@ class HTMLDeclutterer(HTMLCleaner):
             for elm in elements:
                 elm.decompose()
 
+        return soup
+
     def _remove_forms(self, soup:BeautifulSoup):
         # These are all common form elements that can have text
         # Often contain tens of options that just clutter context
@@ -20,6 +22,8 @@ class HTMLDeclutterer(HTMLCleaner):
             elements = soup.find_all(element)
             for elm in elements:
                 elm.decompose()
+
+        return soup
 
     def clean(self, soup:BeautifulSoup):
         """
@@ -31,16 +35,17 @@ class HTMLDeclutterer(HTMLCleaner):
         Returns:
             soup (BeautifulSoup): HTML contents with cluttering elements removed
         """
-        soup = self._remove_navigation()
-        soup = self._remove_forms()
+        soup = self._remove_navigation(soup)
+        soup = self._remove_forms(soup)
         
         return soup
-    
+
+
 
 class HTMLWhitespaceCleaner(HTMLCleaner):
-    def clean(self, soup:BeautifulSoup):
+    def clean(self, contents:str):
         """
-        Converts a BeautifulSoup object to a string while also removing excessive white space from the string.
+        Removes excessive white space from a string.
 
         Args:
             soup (BeautifulSoup): Contains the HTML contents of the page
@@ -48,9 +53,7 @@ class HTMLWhitespaceCleaner(HTMLCleaner):
         Returns:
             contents (str): Webpage contents as a string without excessive white space.
         """
-
         # Remove excessive white space
-        contents = soup.get_text().strip()
         contents = re.sub(r'\n\s*\n+', '\n', contents)
         contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE)
 
