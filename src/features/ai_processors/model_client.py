@@ -2,7 +2,7 @@
 import json
 from ast import literal_eval
 import requests
-from ..assets import PROMPTS
+from src.assets import PROMPTS
 
 from dotenv import load_dotenv
 import os

@@ -1,10 +1,16 @@
 
 import re
+import inflect
 from bs4 import BeautifulSoup
 
-class ContentSummarization:
+from .content_keywords import CONTENT_KEYWORDS
 
-    def pluralize(self, word:str):
+class ContentTrimmer:
+    def __init__(self, content_keywords=CONTENT_KEYWORDS):
+        self.content_keywords = content_keywords
+        self.p = inflect.engine()
+
+    def _pluralize(self, singular:str):
         """
         Takes a word and turns it into its plural form
 
@@ -12,81 +18,19 @@ class ContentSummarization:
             word (str): Single word to turn plural
         
         Returns:
-            value (str): Plural version of the word
+            value (str): Regex pattern to match the singular and plural word
         """
-        if word.endswith('y'):
-            # 'opportunity' -> 'opportunities'
-            base = word[:-1]
-            return fr'\b({base}y|{base}ies)\b'
-        elif word.endswith(('s', 'x', 'z', 'ch', 'sh')):
-            # 'class' -> 'classes'
-            return fr'\b{word}(es)?\b'
-        else:
-            # default: 's'
-            return fr'\b{word}(s)?\b'
+        plural = self.p.plural(singular)
 
-    def find_emails(self, contents:str):
-        """
-        Finds and returns all emails found in a string
+        singular_escaped = re.escape(singular)
+        plural_escaped = re.escape(plural)
 
-        Args:
-            contents (str): The text to search emails from
-        
-        Returns:
-            value (list): A list of all of the emails found within the text
-        """
-        return re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", contents, re.I)
+        pattern = rf'\b({singular_escaped}|{plural_escaped})\b'
 
-    def find_phone_numbers(self, contents:str):
-        """
-        Finds and returns all phone numbers found in a string
+        return pattern
 
-        Args:
-            contents (str): The text to search phone numbers from
-        
-        Returns:
-            value (list): A list of all of the phone numbers found within the text
-        """
-        phone_pattern = re.compile(r'''
-                                   
-            (?:\+?1[\s.-]?)?         # Optional country code: +1, 1, or 1- or 1.
-            (?:\(?\d{3}\)?[\s.-]?)   # Area code: (123), 123, (123)-
-            \d{3}                    # First 3 digits
-            [\s.-]?                  # Separator
-            \d{4}                    # Last 4 digits
-
-            # Optional extension: ext, x, ext., extension followed by digits
-            (?:\s*(?:ext\.?|x|extension)\s*\d{2,5})? 
-                                   
-            ''', re.VERBOSE | re.I)
-        
-        return re.findall(phone_pattern, contents)
-
-    def find_dates(self, contents:str):
-        """
-        Finds and returns all dates found in a string
-
-        Args:
-            contents (str): The text to search dates from
-        
-        Returns:
-            value (list): A list of all of the dates found within the text
-        """
-        date_pattern = re.compile(r"""
-        (?<!\d)                     # Negative lookbehind to avoid matching within a longer number
-        (                           # Start capturing group
-            (?:\d{1,4})             # 1-4 digits (year or day or month)
-            [./-]                   # separator
-            (?:\d{1,2})             # 1-2 digits
-            [./-]                   # separator
-            (?:\d{2,4})             # 2-4 digits (year)
-        )
-        (?!\d)                      # Negative lookahead to avoid trailing digits
-        """, re.VERBOSE | re.I)
-
-        return re.findall(date_pattern, contents)
     
-    def truncont(self, contents:BeautifulSoup|str, keywords:list, area:int=1):
+    def _truncont(self, contents:BeautifulSoup|str, keywords:list, area:int=1):
         """
         Truncates any string separated by new lines and returns some amount of lines 
         above and below lines containing keywords in either the singular or plural form.
@@ -99,7 +43,6 @@ class ContentSummarization:
         Returns:
             value (str): Truncated contents of the webpage
         """
-
         # Extracts content from BeautifulSoup object and splits into individual lines
         if isinstance(contents, BeautifulSoup):
             contents = contents.get_text().split('\n')
@@ -112,7 +55,7 @@ class ContentSummarization:
         for line in contents:
             for keyword in keywords:
                 # Non case-sensitive keyword can be followed by 1 s but not any other letter
-                if re.search(self.pluralize(keyword), line, re.I):
+                if re.search(self._pluralize(keyword), line, re.I):
                     lines.append(line)
 
         # Use dictionaries to prevent duplicates and maintain order
@@ -160,12 +103,12 @@ class ContentSummarization:
 
         # Truncate for dates as well as keywords if required info is 'dates'
         if required_info == 'dates':
-            all_keywords = (KEYWORDS[required_info] 
+            all_keywords = (self.content_keywords[required_info] 
                         + self.find_dates(contents))
         
         # Truncate for emails and phone numbers as well as keywords if required info is 'contact'
         elif required_info == 'contact':
-            all_keywords = (KEYWORDS[required_info] 
+            all_keywords = (self.content_keywords[required_info] 
                         + self.find_emails(contents) 
                         + self.find_phone_numbers(contents))
             
@@ -175,6 +118,6 @@ class ContentSummarization:
             
         # Or simply truncate for keywords associated with the required info
         else:
-            all_keywords = KEYWORDS[required_info]
+            all_keywords = self.content_keywords[required_info]
 
-        return self.truncont(contents, all_keywords, area)
+        return self._truncont(contents, all_keywords, area)

@@ -4,3 +4,7 @@ openai==1.97.1
 playwright==1.54.0
 python-dotenv==1.1.1
 Requests==2.32.4
+langchain
+langchain-openai
+pydantic
+inflect

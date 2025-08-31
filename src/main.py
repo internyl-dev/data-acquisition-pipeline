@@ -1,87 +1,136 @@
 
 import asyncio
-
 import json
-import atexit
+from bs4 import BeautifulSoup
 
-from .utils.base import Base
+from .features.web_scrapers import PlaywrightClient
+from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
+from .features.schema_validators import SchemaValidationEngine
+from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
+from .features.ai_processors import azure_chat_openai, create_chat_prompt_template, PromptBuilder
+from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter
 
-class Main(Base):
+from .utils import Guards
+
+class Main(Guards):
     def __init__(self, log_mode:bool=False, headless:bool=True):
-        Base.__init__(self, log_mode, headless)
+        Guards.__init__(self)
 
         self.history = []
         self.queue = {}
         
-        self.setup_logging_main()
+        try:
+            with open(file="src/assets/schemas.json", mode="r", encoding="utf-8") as f:
+                self.schema = json.load(f)
+        except FileNotFoundError as e:
+            print(e)
+            raise e
+        except json.JSONDecodeError as e:
+            print(e)
+            raise e
+        
+        self.scraper = PlaywrightClient()
+        self.declutterer, self.whitespace_cleaner = HTMLDeclutterer(), HTMLWhitespaceCleaner()
+        self.trimmer = ContentTrimmer()
+        self.email_extractor, self.pn_extractor, self.date_extractor = EmailExtractor(), PhoneNumberExtractor(), DateExtractor()
+        self.url_extractor = URLExtractor()
+        self.url_processor = URLProcessor()
+        self.url_ranker = URLRanker()
+        self.url_filter = URLFilter()
+        
+    def minimize_required_info(self, url, max_queue_length):
+        if len(self.queue) > max_queue_length:
 
-        if self.log_mode:
-            # Register log file closure on exit
-            atexit.register(lambda: self.api_log and self.api_log.close())
+            # If the queue length is already really long, don't extract information that isn't needed
+            # even if the information is specified as needed in the queue
+            required_info = list(set(self.queue[url]) & set(self.get_required_info(self.response))) # Common required info between the two
+
+            self.logger.info(f"High queue length ({max_queue_length}): minimizing information from {self.queue[url]} to {required_info}...\n")
+            self.queue[url] = required_info
 
     def run(self, url:str, depth:int=2, bulk_process:bool=True, first_run=True):
         
-        if first_run:
+        if not hasattr(self, "url"):
             self.url = url
-            first_run = False
 
-        self.logger.debug(f"Depth: {depth}")
-        self.logger.info(f"Beginning to scrape '{url}'...")
-
-        # GUARD CLAUSES
-        # 1. Checks if URL is in history
-        # 2. Checks if max depth has been reached
-        # 3. Checks if all required info has already been collected
-        if self.guard_clauses_main(url, depth):
+        if any([
+            self.url_in_history(url),
+            self.max_depth_reached(depth),
+            self.received_all_required_info(SchemaValidationEngine(self.schema))
+        ]): 
             return
-
-        # New URL: add to history for tracking and remove from queue
+        
         self.history.append(url)
         self.queue.pop(url, None)
 
-        # WEB SCRAPING
-        # Using Playwright, we scrape the HTML contents from a url and get the inner text
         try:
-            raw_html = asyncio.run(self.scrape_html(url))
+            raw_html = asyncio.run(self.scraper.scrape_url(url))
         except Exception as e:
-            self.logger.error(e)
+            print(e)
             return
+        
+        raw_soup = BeautifulSoup(raw_html, "html.parser")
 
-        # HTML PARSING
-        # 1. Remove unecessary bloating HTML elements from the raw html
-        # 2. Remove any unecessary whitespace
-        contents = self.parse_html(raw_html)
+        raw_soup = self.declutterer.clean(raw_soup)
+        contents = self.whitespace_cleaner.clean(raw_soup)
 
-        # Find all required info and update object variable self.all_required_info
-        if url in self.queue: # Avoid key error
-            self.minimize_required_info(url, max_queue_length=1) # Minimizes the required info within the queue value
+        if url in self.queue:
+            self.minimize_required_info(url, 1)
             self.all_required_info = self.queue[url]
         else:
-            self.all_required_info = self.get_required_info()
+            self.all_required_info = SchemaValidationEngine(self.schema).validate_all()
 
-        self.logger.debug(f"Extracting for the following info: {self.all_required_info}...")
+        for required_info in self.all_required_info:
 
-        # MODEL CLIENT
-        # 1. Iterates through the required info,
-        # 2. Summarizes the HTML contents through each iteration based off of keywords,
-        # 3. Makes prompts based on collecting the required info,
-        # 4. Sends a request to the model,
-        # 5. Updates the response based on the response from the model
-        self.model_client_main(url, contents, bulk_process)
+            if bulk_process:
+                required_info = "all"
+            
+            contents = self.trimmer.truncate_contents(contents, required_info, 500, 1)
+
+            builder = PromptBuilder()
+            builder.add_schema_context(self.schema) \
+                   .add_title(self.schema["overview"]["title"]) \
+                   .add_description(self.schema["overview"]["description"]) \
+                   .add_provider(self.schema["overview"]["provider"]) \
+                   .add_webpage_contents(contents)
+            instructions = builder.get_prompt_obj().get_prompt()
+
+            prompt = create_chat_prompt_template(instructions, required_info)
+            response = azure_chat_openai.invoke(prompt)
+
+            response_dict = response.model_dump()
+            
+            if bulk_process:
+                self.schema = response_dict
+                break
+            else:
+                self.schema[required_info] = response_dict
+                continue
         
-        # Check for required info after the new information has been added
-        self.all_required_info = self.get_required_info()
-        self.logger.debug(f'The following info is still required: {self.all_required_info}')
+        self.all_required_info = SchemaValidationEngine(self.schema).validate_all()
 
-        # WEB CRAWLING
-        # 1. Filter links based on keywords in the content or the URL
-        # 2. Check if link is in history, continue iterating without changing the queue if it is
-        # 3. Check if link is already in queue, add information if it is
-        # 4. Else add link and required info to queue
-        self.web_crawling_main(raw_html, url)
-        self.logger.debug(f"Updated queue:\n{json.dumps(self.queue, indent=1)}")
+        new_urls = self.url_extractor.extract(raw_soup)
+        
+        for required_info in self.all_required_info:
+            filtered_urls = self.url_filter.filter(new_urls, required_info)
+            for filtered_url in filtered_urls.values():
 
-        while self.queue and depth > 1:
+                filtered_url = self.url_processor.process_url(url, filtered_url)
+
+                # Skip links we've already visited
+                if filtered_url in self.history:
+                    continue
+
+                # If link is in queue: add info if it was not already there
+                elif filtered_url in self.queue:
+                    if required_info not in self.queue[filtered_url]:
+                        self.queue[filtered_url].append(required_info)
+
+                # Link is not in history or queue: add it into the queue
+                else:
+                    self.queue[filtered_url] = [required_info]
+
+        while self.queue:
             self.run(depth=depth-1, url=list(self.queue.keys())[0], bulk_process=False)
-        
+
         return

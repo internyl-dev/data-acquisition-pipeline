@@ -110,27 +110,40 @@ class RootSchema(BaseModel):
     costs: Costs
     contact: Contact
 
-class ResponseFactory:
+class ResponseModelFactory:
     @staticmethod
     def make_overview():
-        return Overview()
+        return Overview
     
     @staticmethod
     def make_eligibility():
-        return Eligibility()
+        return Eligibility
     
     @staticmethod
     def make_dates():
-        return Dates()
+        return Dates
     
     @staticmethod
     def make_locations():
-        return Locations()
+        return Locations
     
     @staticmethod
     def make_costs():
-        return Costs()
-    
+        return Costs
+
     @staticmethod
     def make_contact():
-        return Contact()
+        return Contact
+    
+    def make(self, s:str):
+        sections = {
+            "overview": self.make_overview(),
+            "eligibility": self.make_eligibility(),
+            "dates": self.make_dates(),
+            "locations": self.make_locations(),
+            "costs": self.make_costs(),
+            "contact": self.make_contact(),
+            "all": RootSchema
+        }
+
+        return sections[s]

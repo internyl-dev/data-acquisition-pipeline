@@ -69,4 +69,3 @@ CONTENT_KEYWORDS = {
         'mailto:'
     ],
 }
-# still need more kw + need to support searching for all these keywords with truncate_html.py

@@ -64,10 +64,22 @@ class ContactValidator(SchemaValidator):
 
         return required_info
 
-class SchemaValidationOrchestrator:
-    def __init__(self):
-        self.all_required_info = []
+class SchemaValidationEngine:
+    def __init__(self, schema):
+        self.validators = [OverviewValidator(schema),
+                           EligibilityValidator(schema),
+                           DatesValidator(schema),
+                           LocationsValidator(schema),
+                           CostsValidator(schema),
+                           ContactValidator(schema)]
+
 
     def validate(self, strat:SchemaValidator, schema):
-        self.all_required_info.append(strat.validate(schema))
-        return self.all_required_info
+        return strat.validate(schema)
+    
+    def validate_all(self):
+        required_info = []
+        for validator in self.validators:
+            required_info.extend(validator.validate())
+        
+        return required_info
