@@ -20,9 +20,9 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL")
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL")
 
-CUSTOM_API_KEY = os.getenv("API_KEY")
-CUSTOM_MODEL = os.getenv("MODEL")
-CUSTOM_ENDPOINT_URL = os.getenv("ENDPOINT_URL")
+CUSTOM_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+CUSTOM_MODEL = os.getenv("AZURE_OPENAI_MODEL")
+CUSTOM_ENDPOINT_URL = os.getenv("AZURE_OPENAI_ENDPOINT")
 
 class ModelClient:
     def __init__(self):
