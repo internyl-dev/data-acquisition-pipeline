@@ -1,5 +1,5 @@
 
-from src.models import SchemaValidator
+from .base_schema_validator import SchemaValidator
 
 class OverviewValidator(SchemaValidator):
     def validate(self):

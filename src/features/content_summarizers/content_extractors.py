@@ -1,9 +1,9 @@
 
 import re
 
-from src.models import Extractor
+from .base_content_extractor import ContentExtractor
 
-class EmailExtractor(Extractor):
+class EmailExtractor(ContentExtractor):
     def extract(self, s:str):
         """
         Finds and returns all emails found in a string
@@ -16,7 +16,7 @@ class EmailExtractor(Extractor):
         """
         return re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", s, re.I)
 
-class PhoneNumberExtractor(Extractor):
+class PhoneNumberExtractor(ContentExtractor):
     def extract(self, s:str):
         """
         Finds and returns all phone numbers found in a string
@@ -42,7 +42,7 @@ class PhoneNumberExtractor(Extractor):
     
         return re.findall(phone_pattern, s)
 
-class DateExtractor(Extractor):
+class DateExtractor(ContentExtractor):
     def extract(self, s:str):
         """
         Finds and returns all dates found in a string

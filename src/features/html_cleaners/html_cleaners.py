@@ -2,7 +2,7 @@
 import re
 from bs4 import BeautifulSoup
 
-from src.models import HTMLCleaner
+from .base_html_cleaner import HTMLCleaner
 
 class HTMLDeclutterer(HTMLCleaner):
     def _remove_navigation(self, soup:BeautifulSoup):

@@ -1,6 +1,6 @@
 
 from src.assets import STATE_ABBREVIATIONS
-from src.models import SchemaCleaner
+from .base_schema_cleaner import SchemaCleaner
 
 class OverviewCleaner(SchemaCleaner):
     def __init__(self, schema:dict):

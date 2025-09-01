@@ -1,3 +1,3 @@
 
 from .content_trimmer import ContentTrimmer
-from .extractors import EmailExtractor, DateExtractor, PhoneNumberExtractor
+from .content_extractors import EmailExtractor, DateExtractor, PhoneNumberExtractor

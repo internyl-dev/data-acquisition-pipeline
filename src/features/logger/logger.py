@@ -5,7 +5,7 @@ import os
 import sys
 from pprint import pp
 
-from src.models import Observer
+from .base_observer import Observer
 
 class Observable:
     def __init__(self):

@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod
 
-class Extractor(ABC):
+class ContentExtractor(ABC):
     @abstractmethod
     def extract(s:str):
         "Extracts for some information in a string"
