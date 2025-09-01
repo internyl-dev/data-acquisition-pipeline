@@ -33,6 +33,8 @@ class Main(Base):
         # 2. Checks if max depth has been reached
         # 3. Checks if all required info has already been collected
         if self.guard_clauses_main(url, depth):
+            self.history.append(url)
+            self.queue.pop(url, None)
             return
 
         # New URL: add to history for tracking and remove from queue

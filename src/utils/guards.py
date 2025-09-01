@@ -5,14 +5,13 @@ class Guards:
         if url in self.history:
 
             # URL already processed: remove from queue to avoid duplicate extraction
-            removed_item = self.queue.pop(url)
+            removed_item = self.queue.pop(url, None)
 
             self.logger.debug(f"'{removed_item}' already in history, removing from queue...")
             return True
 
     def max_depth_reached(self, depth):
         if depth <= 0:
-
             self.logger.debug(f"Maximum depth recursion reached ({depth}), ending recursion...")
             return True
 

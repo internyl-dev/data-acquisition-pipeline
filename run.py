@@ -5,7 +5,7 @@ import json
 Instance = Main(log_mode=True)
 
 # Input link to extract info from
-Instance.run('https://opportunitynetwork.org/apply/')
+Instance.run('https://fte.org/students/economics-for-leaders-program/')
 Instance.logger.info('Final extracted info:')
 Instance.logger.info(json.dumps(Instance.response, indent=1))
 Instance.cleanup_main()
