@@ -17,7 +17,7 @@ class URLFilter:
         """
         filtered_links = {}
         for href in urls:
-            for keyword in LINK_KEYWORDS['link'][required_info]:
+            for keyword in LINK_KEYWORDS[required_info]:
 
                 # If the keyword was found in the text or HREF, add it to the new dictionary
                 if re.search(fr'{keyword}', href, re.I) or re.search(fr'{keyword}', urls[href], re.I):

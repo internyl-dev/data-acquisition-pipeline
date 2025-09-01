@@ -2,6 +2,7 @@
 import asyncio
 import json
 from bs4 import BeautifulSoup
+import logging
 
 from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
@@ -9,6 +10,7 @@ from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
 from .features.ai_processors import azure_chat_openai, create_chat_prompt_template, PromptBuilder
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter
+from .features.logger import Logger, Observable
 
 from .utils import Guards
 
@@ -28,7 +30,7 @@ class Main(Guards):
         except json.JSONDecodeError as e:
             print(e)
             raise e
-        
+
         self.scraper = PlaywrightClient()
         self.declutterer, self.whitespace_cleaner = HTMLDeclutterer(), HTMLWhitespaceCleaner()
         self.trimmer = ContentTrimmer()
@@ -37,6 +39,9 @@ class Main(Guards):
         self.url_processor = URLProcessor()
         self.url_ranker = URLRanker()
         self.url_filter = URLFilter()
+
+        self.log = Logger(log_mode=True)
+        self.log.apply_conditional_logging()
         
     def minimize_required_info(self, url, max_queue_length):
         if len(self.queue) > max_queue_length:
@@ -48,7 +53,7 @@ class Main(Guards):
             self.logger.info(f"High queue length ({max_queue_length}): minimizing information from {self.queue[url]} to {required_info}...\n")
             self.queue[url] = required_info
 
-    def run(self, url:str, depth:int=2, bulk_process:bool=True, first_run=True):
+    def run(self, url:str, depth:int=2):
         
         if not hasattr(self, "url"):
             self.url = url
@@ -63,6 +68,7 @@ class Main(Guards):
         self.history.append(url)
         self.queue.pop(url, None)
 
+        self.log.update("Scraping...")
         try:
             raw_html = asyncio.run(self.scraper.scrape_url(url))
         except Exception as e:
@@ -82,7 +88,7 @@ class Main(Guards):
 
         for required_info in self.all_required_info:
 
-            if bulk_process:
+            if len(self.all_required_info) == 6:
                 required_info = "all"
             
             contents = self.trimmer.truncate_contents(contents, required_info, 500, 1)
@@ -95,12 +101,15 @@ class Main(Guards):
                    .add_webpage_contents(contents)
             instructions = builder.get_prompt_obj().get_prompt()
 
-            prompt = create_chat_prompt_template(instructions, required_info)
+            prompt = create_chat_prompt_template(required_info)
+            prompt = prompt.format_prompt(query=instructions)
+            self.log.update("Sending request...")
             response = azure_chat_openai.invoke(prompt)
 
-            response_dict = response.model_dump()
+            response_dict = json.loads(response.model_dump()["content"])
+            self.log.update(response_dict)
             
-            if bulk_process:
+            if len(self.all_required_info) == 6:
                 self.schema = response_dict
                 break
             else:
@@ -131,6 +140,6 @@ class Main(Guards):
                     self.queue[filtered_url] = [required_info]
 
         while self.queue:
-            self.run(depth=depth-1, url=list(self.queue.keys())[0], bulk_process=False)
+            self.run(depth=depth-1, url=list(self.queue.keys())[0])
 
         return

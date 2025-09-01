@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 
 from src.models import ResponseModelFactory
+from .prompts import PROMPTS
 
 load_dotenv()
 
@@ -18,7 +19,7 @@ azure_chat_openai = AzureChatOpenAI(
     max_retries=2
 )
 
-def create_chat_prompt_template(instructions:str, required_info:str, factory=None):
+def create_chat_prompt_template(required_info:str, factory=None):
     factory = factory or ResponseModelFactory()
     model = factory.make(required_info)
     parser = PydanticOutputParser(pydantic_object=model)
@@ -27,7 +28,7 @@ def create_chat_prompt_template(instructions:str, required_info:str, factory=Non
             (
                 "system",
                 """
-                {instructionst}
+                {instructions}
                 Wrap the output in this format and provide no other text\n{format_instructions}
                 """,
             ),
@@ -35,6 +36,6 @@ def create_chat_prompt_template(instructions:str, required_info:str, factory=Non
             ("human", "{query}"),
             ("placeholder", "{agent_scratchpad}"),
         ]
-    ).partial(format_instructions=parser.get_format_instructions(), instructions=instructions)
+    ).partial(format_instructions=parser.get_format_instructions(), instructions=PROMPTS[required_info])
 
     return prompt

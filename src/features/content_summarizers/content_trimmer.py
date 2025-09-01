@@ -10,7 +10,7 @@ class ContentTrimmer:
         self.content_keywords = content_keywords
         self.p = inflect.engine()
 
-    def _pluralize(self, singular:str):
+    def _get_plural_regex(self, singular:str):
         """
         Takes a word and turns it into its plural form
 
@@ -55,7 +55,7 @@ class ContentTrimmer:
         for line in contents:
             for keyword in keywords:
                 # Non case-sensitive keyword can be followed by 1 s but not any other letter
-                if re.search(self._pluralize(keyword), line, re.I):
+                if re.search(self._get_plural_regex(keyword), line, re.I):
                     lines.append(line)
 
         # Use dictionaries to prevent duplicates and maintain order

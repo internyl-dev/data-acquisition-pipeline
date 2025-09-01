@@ -20,7 +20,7 @@ class TestHTMLCleaners(unittest.TestCase):
         }
 
         for case in plural_test_cases:
-            pattern = re.compile(self.trimmer._pluralize(case))
+            pattern = re.compile(self.trimmer._get_plural_regex(case))
             self.assertIsNotNone(
                 pattern.search(case),
                 msg=f"Failed to match singular: {case} with pattern {pattern.pattern}"

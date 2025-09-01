@@ -5,7 +5,21 @@ import os
 import sys
 from pprint import pp
 
-class Logger:
+from src.models import Observer
+
+class Observable:
+    def __init__(self):
+        self.observers = []
+    
+    def register(self, *args:Observer):
+        for observer in args:
+            self.observers.append(observer)
+
+    def update(self, *args, level=None):
+        for observer in self.observers:
+            observer.update(*args, level=level)
+
+class Logger(Observer):
     def __init__(self, log_mode):
 
         self.LOGS_DIR_PATH = "logs"
@@ -66,7 +80,7 @@ class Logger:
         if not hasattr(self, 'logger'):
             return
             
-        def log_mode_guard(func):
+        def __log_mode_guard(func):
             def wrapper(*args, **kwargs):
                 if not self.log_mode:
                     return
@@ -83,12 +97,26 @@ class Logger:
                 
             return wrapper
 
-        self.logger.debug = log_mode_guard(self.logger.debug)
-        self.logger.info = log_mode_guard(self.logger.info)
-        self.logger.warning = log_mode_guard(self.logger.warning)
-        self.logger.error = log_mode_guard(self.logger.error)
-        self.logger.critical = log_mode_guard(self.logger.critical)
+        self.logger.debug = __log_mode_guard(self.logger.debug)
+        self.logger.info = __log_mode_guard(self.logger.info)
+        self.logger.warning = __log_mode_guard(self.logger.warning)
+        self.logger.error = __log_mode_guard(self.logger.error)
+        self.logger.critical = __log_mode_guard(self.logger.critical)
 
-    def setup_logging_main(self):
-        self.create_logging_files()
-        self.apply_conditional_logging()
+    def update(self, *args, level=None):
+        def __iterlog(method):
+            for msg in args:
+                method(msg)
+
+        if not level:
+            __iterlog(self.logger.info)
+        elif level==logging.DEBUG:
+            __iterlog(self.logger.debug)
+        elif level==logging.INFO:
+            __iterlog(self.logger.info)
+        elif level==logging.WARNING:
+            __iterlog(self.logger.warning)
+        elif level==logging.ERROR:
+            __iterlog(self.logger.error)
+        elif level==logging.CRITICAL:
+            __iterlog(self.logger.critical)
