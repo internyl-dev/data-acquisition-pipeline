@@ -3,6 +3,9 @@ import asyncio
 import json
 from bs4 import BeautifulSoup
 import logging
+from pprint import pp
+
+from .models import History, FIFO, FILO, Queue, RootSchema
 
 from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
@@ -10,7 +13,7 @@ from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
 from .features.ai_processors import azure_chat_openai, create_chat_prompt_template, PromptBuilder
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter, minimize_required_info
-from .features.logger import Logger, Observable
+from .features.logger import Logger
 
 from .utils import Guards
 
@@ -43,7 +46,7 @@ class Main(Guards):
         self.date_extractor     = date_extractor     or DateExtractor()
         self.url_extractor      = url_extractor      or URLExtractor()
         self.url_processor      = url_processor      or URLProcessor()
-        self.url_ranker         =  url_ranker        or URLRanker()
+        self.url_ranker         = url_ranker         or URLRanker()
         self.url_filter         = url_filter         or URLFilter()
 
         self.log = Logger(log_mode=True)
@@ -60,13 +63,12 @@ class Main(Guards):
         return raw_html
     
     def __build_prompt(self, contents, required_info):
-            
         builder = PromptBuilder()
         builder.add_schema_context(self.schema) \
-                .add_title(self.schema["overview"]["title"]) \
-                .add_description(self.schema["overview"]["description"]) \
-                .add_provider(self.schema["overview"]["provider"]) \
-                .add_webpage_contents(contents)
+               .add_title(self.schema["overview"]["title"]) \
+               .add_description(self.schema["overview"]["description"]) \
+               .add_provider(self.schema["overview"]["provider"]) \
+               .add_webpage_contents(contents)
         instructions = builder.get_prompt_obj().get_prompt()
 
         chat_prompt_template = create_chat_prompt_template(required_info)
@@ -75,13 +77,13 @@ class Main(Guards):
         return prompt
     
     def _ai_process_url(self, contents):
-        for required_info in self.all_required_info:
+        for target_info in self.all_target_info:
 
-            if len(self.all_required_info) == 6:
-                required_info = "all"
+            if len(self.all_target_info) == 6:
+                target_info = "all"
             
-            trimmed_contents = self.trimmer.truncate_contents(contents, required_info, 500, 1)
-            prompt = self.__build_prompt(trimmed_contents, required_info)
+            trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
+            prompt = self.__build_prompt(trimmed_contents, target_info)
 
             self.log.update("Sending request...")
             response = azure_chat_openai.invoke(prompt)
@@ -89,20 +91,25 @@ class Main(Guards):
             response_dict = json.loads(response.model_dump()["content"])
             self.log.update(response_dict)
             
-            if len(self.all_required_info) == 6:
+            if len(self.all_target_info) == 6:
                 self.schema = response_dict
                 break
             else:
-                self.schema[required_info] = response_dict
+                self.schema[target_info] = response_dict
                 continue
     
     def _queue_new_links(self, base_url, raw_soup):
 
-        self.all_required_info = SchemaValidationEngine(self.schema).validate_all()
+        if base_url in self.queue:
+            minimize_required_info(base_url, 1)
+            self.all_target_info = self.queue[base_url]
+        else:
+            self.all_target_info = SchemaValidationEngine(self.schema).validate_all()
+        self.log.update(self.all_target_info)
 
         new_urls = self.url_extractor.extract(raw_soup)
         
-        for required_info in self.all_required_info:
+        for required_info in self.all_target_info:
             filtered_urls = self.url_filter.filter(new_urls, required_info)
             for filtered_url in filtered_urls.values():
 
@@ -145,13 +152,14 @@ class Main(Guards):
 
         if url in self.queue:
             minimize_required_info(url, 1)
-            self.all_required_info = self.queue[url]
+            self.all_target_info = self.queue[url]
         else:
-            self.all_required_info = SchemaValidationEngine(self.schema).validate_all()
+            self.all_target_info = SchemaValidationEngine(self.schema).validate_all()
 
         self._ai_process_url(contents)
         
         self._queue_new_links(url, raw_soup)
+        self.log.update(self.queue)
 
         while self.queue:
             self.run(depth=depth-1, url=list(self.queue.keys())[0])

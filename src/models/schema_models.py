@@ -114,7 +114,7 @@ class RootSchema(BaseModelConfig):
     costs: Costs = Costs()
     contact: Contact = Contact()
 
-class ResponseModelFactory:
+class SchemaModelFactory:
     @staticmethod
     def make_overview():
         return Overview
