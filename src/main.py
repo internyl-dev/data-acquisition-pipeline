@@ -4,6 +4,7 @@ import json
 from bs4 import BeautifulSoup
 import logging
 from pprint import pp
+from dataclasses import dataclass
 
 from .models import History, FIFO, FILO, Queue, RootSchema
 
@@ -17,42 +18,53 @@ from .features.logger import Logger
 
 from .utils import Guards
 
+@dataclass
 class Main(Guards):
-    def __init__(self, log_mode:bool=False, headless:bool=True, 
-                 scraper=None, declutterer=None, whitespace_cleaner=None, 
-                 trimmer=None, email_extractor=None, pn_extractor=None, date_extractor=None,
-                 url_extractor=None, url_processor=None, url_ranker=None, url_filter=None):
+    log_mode: bool=True
+    headless: bool=True
+
+    history=None
+    queue=None
+    schema=None
+
+    scraper=None
+    declutterer=None
+    whitespace_cleaner=None
+    validator=None
+    trimmer=None
+    email_extractor=None
+    pn_extractor=None
+    date_extractor=None
+    url_extractor=None
+    url_processor=None
+    url_ranker=None
+    url_filter=None
+
+    def __post_init__(self):
+        
         Guards.__init__(self)
 
-        self.history = []
-        self.queue = {}
-        
-        try:
-            with open(file="src/assets/schemas.json", mode="r", encoding="utf-8") as f:
-                self.schema = json.load(f)
-        except FileNotFoundError as e:
-            print(e)
-            raise e
-        except json.JSONDecodeError as e:
-            print(e)
-            raise e
+        self.history = self.history or History()
+        self.queue = self.queue or Queue()
+        self.schema = self.schema or RootSchema()
 
-        self.scraper            = scraper            or PlaywrightClient()
-        self.declutterer        = declutterer        or HTMLDeclutterer()
-        self.whitespace_cleaner = whitespace_cleaner or HTMLWhitespaceCleaner()
-        self.trimmer            = trimmer            or ContentTrimmer()
-        self.email_extractor    = email_extractor    or EmailExtractor()
-        self.pn_extractor       = pn_extractor       or PhoneNumberExtractor()
-        self.date_extractor     = date_extractor     or DateExtractor()
-        self.url_extractor      = url_extractor      or URLExtractor()
-        self.url_processor      = url_processor      or URLProcessor()
-        self.url_ranker         = url_ranker         or URLRanker()
-        self.url_filter         = url_filter         or URLFilter()
+        self.scraper            = self.scraper            or PlaywrightClient()
+        self.declutterer        = self.declutterer        or HTMLDeclutterer()
+        self.whitespace_cleaner = self.whitespace_cleaner or HTMLWhitespaceCleaner()
+        self.validator          = self.validator          or SchemaValidationEngine()
+        self.trimmer            = self.trimmer            or ContentTrimmer()
+        self.email_extractor    = self.email_extractor    or EmailExtractor()
+        self.pn_extractor       = self.pn_extractor       or PhoneNumberExtractor()
+        self.date_extractor     = self.date_extractor     or DateExtractor()
+        self.url_extractor      = self.url_extractor      or URLExtractor()
+        self.url_processor      = self.url_processor      or URLProcessor()
+        self.url_ranker         = self.url_ranker         or URLRanker()
+        self.url_filter         = self.url_filter         or URLFilter()
 
-        self.log = Logger(log_mode=True)
+        self.log = Logger(log_mode=self.log_mode)
         self.log.apply_conditional_logging()
 
-    def _scrape(self, url):
+    def scrape(self, url):
         self.log.update("Scraping...")
         try:
             raw_html = asyncio.run(self.scraper.scrape_url(url))
@@ -62,7 +74,7 @@ class Main(Guards):
 
         return raw_html
     
-    def __build_prompt(self, contents, required_info):
+    def build_prompt(self, contents, required_info):
         builder = PromptBuilder()
         builder.add_schema_context(self.schema) \
                .add_title(self.schema["overview"]["title"]) \
@@ -76,14 +88,14 @@ class Main(Guards):
 
         return prompt
     
-    def _ai_process_url(self, contents):
+    def ai_process_url(self, contents):
         for target_info in self.all_target_info:
 
             if len(self.all_target_info) == 6:
                 target_info = "all"
             
             trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
-            prompt = self.__build_prompt(trimmed_contents, target_info)
+            prompt = self.build_prompt(trimmed_contents, target_info)
 
             self.log.update("Sending request...")
             response = azure_chat_openai.invoke(prompt)
@@ -98,13 +110,13 @@ class Main(Guards):
                 self.schema[target_info] = response_dict
                 continue
     
-    def _queue_new_links(self, base_url, raw_soup):
+    def queue_new_links(self, base_url, raw_soup):
 
         if base_url in self.queue:
             minimize_required_info(base_url, 1)
             self.all_target_info = self.queue[base_url]
         else:
-            self.all_target_info = SchemaValidationEngine(self.schema).validate_all()
+            self.all_target_info = SchemaValidationEngine().validate_all(self.schema)
         self.log.update(self.all_target_info)
 
         new_urls = self.url_extractor.extract(raw_soup)
@@ -128,6 +140,22 @@ class Main(Guards):
                 else:
                     self.queue[filtered_url] = [required_info]
 
+    def first_run(self, url:str):
+        self.base_url = url
+
+        if self.received_all_target_info():
+            # Handle the fully populated schema case
+            return
+        
+        self.history.add(url)
+
+        raw_html = self.scrape(url)
+        raw_soup = BeautifulSoup(raw_html, "html.parser")
+        raw_soup = self.declutterer.clean(raw_soup)
+        contents = self.whitespace_cleaner.clean(raw_soup)
+
+        self.all_target_info = self.validator.validate_all(self.schema)
+
     def run(self, url:str, depth:int=2):
         
         if not hasattr(self, "url"):
@@ -136,7 +164,7 @@ class Main(Guards):
         if any([
             self.url_in_history(url),
             self.max_depth_reached(depth),
-            self.received_all_required_info(SchemaValidationEngine(self.schema))
+            self.received_all_target_info()
         ]):
             self.history.append(url)
             self.queue.pop(url, None)
@@ -145,7 +173,7 @@ class Main(Guards):
         self.history.append(url)
         self.queue.pop(url, None)
 
-        raw_html = self._scrape(url)
+        raw_html = self.scrape(url)
         raw_soup = BeautifulSoup(raw_html, "html.parser")
         raw_soup = self.declutterer.clean(raw_soup)
         contents = self.whitespace_cleaner.clean(raw_soup)
@@ -156,9 +184,9 @@ class Main(Guards):
         else:
             self.all_target_info = SchemaValidationEngine(self.schema).validate_all()
 
-        self._ai_process_url(contents)
+        self.ai_process_url(contents)
         
-        self._queue_new_links(url, raw_soup)
+        self.queue_new_links(url, raw_soup)
         self.log.update(self.queue)
 
         while self.queue:

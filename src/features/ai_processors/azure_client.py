@@ -6,7 +6,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 
 from src.models import SchemaModelFactory
+from src.models import Fields
 from .prompts import PROMPTS
+
 
 load_dotenv()
 
@@ -19,7 +21,7 @@ azure_chat_openai = AzureChatOpenAI(
     max_retries=2
 )
 
-def create_chat_prompt_template(required_info:str, factory=None):
+def create_chat_prompt_template(required_info:str|Fields, factory=None):
     factory = factory or SchemaModelFactory()
     model = factory.make(required_info)
     parser = PydanticOutputParser(pydantic_object=model)

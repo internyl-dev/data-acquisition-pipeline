@@ -2,6 +2,8 @@
 from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
+from .schema_fields import Fields
+
 # Type aliases
 OptionalBool = bool | Literal["not provided"]
 OptionalInt = int | Literal["not provided"]
@@ -139,18 +141,37 @@ class SchemaModelFactory:
     def make_contact():
         return Contact
     
-    def make(self, s:str):
+    def _make_from_str(self, s:str):
         sections = {
-            "overview": self.make_overview(),
-            "eligibility": self.make_eligibility(),
-            "dates": self.make_dates(),
-            "locations": self.make_locations(),
-            "costs": self.make_costs(),
-            "contact": self.make_contact(),
-            "all": RootSchema
+            "overview": self.make_overview,
+            "eligibility": self.make_eligibility,
+            "dates": self.make_dates,
+            "locations": self.make_locations,
+            "costs": self.make_costs,
+            "contact": self.make_contact,
         }
-
-        return sections[s]
+        return sections[s]() if s != "all" else RootSchema
+    
+    def _make_from_enum(self, e:Fields):
+        match e:
+            case Fields.OVERVIEW:
+                return self.make_overview()
+            case Fields.ELIGIBILITY:
+                return self.make_eligibility()
+            case Fields.DATES:
+                return self.make_dates()
+            case Fields.LOCATIONS:
+                return self.make_locations()
+            case Fields.COSTS:
+                return self.make_costs()
+            case Fields.CONTACT:
+                return self.make_contact()
+            
+    def make(self, s:str|Fields):
+        if isinstance(s, str):
+            return self._make_from_str(s)
+        elif isinstance(s, Fields):
+            return self._make_from_enum(s)
     
 if __name__ == "__main__":
 

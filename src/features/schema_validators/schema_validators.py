@@ -1,85 +1,174 @@
 
 from .base_schema_validator import SchemaValidator
+from src.models import Fields
 
 class OverviewValidator(SchemaValidator):
-    def validate(self):
-        required_info = []
+    def validate_dict(self, schema:dict):
+        target_info = []
 
-        overview = self.schema['overview']
-        if overview['title'] == 'not provided':
-            required_info.append('overview')
+        # Title missing
+        overview = schema["overview"]
+        if overview["title"] == "not provided":
+            target_info.append("overview")
         
-        return required_info
+        return target_info
+    
+    def validate(self, schema):
+        target_info = []
+        
+        # Title missing
+        overview = schema.overview
+        if overview.title == "not provided":
+            target_info.append(Fields.OVERVIEW)
+
+        return target_info
 
 class EligibilityValidator(SchemaValidator):
-    def validate(self):
-        required_info = []
+    def validate_dict(self, schema:dict):
+        target_info = []
 
-        eligibility = self.schema['eligibility']
-        if 'not provided' in eligibility['eligibility']['grades'] and list(eligibility['eligibility']['age'].values()) == ['not provided', 'not provided']:
-            required_info.append('eligibility')
+        eligibility = schema["eligibility"]
+
+        eligibility_missing = ("not provided" in eligibility["eligibility"]["grades"]) \
+                               and (list(eligibility["eligibility"]["age"].values()) == ["not provided", "not provided"])
+
+        if eligibility_missing:
+            target_info.append("eligibility")
         
-        return required_info
+        return target_info
+    
+    def validate(self, schema):
+        target_info = []
+        
+        eligibility = schema.eligibility
+
+        eligibility_missing = ("not provided" in eligibility.grades) \
+                              and (eligibility.age.minimum == eligibility.age.maximum) \
+                              and (eligibility.age.minimum == "not provided")
+
+        if eligibility_missing:
+            target_info.append(Fields.ELIGIBILITY)
+
+        return target_info
 
 class DatesValidator(SchemaValidator):
-    def validate(self):
-        required_info = []
+    def validate_dict(self, schema:dict):
+        target_info = []
 
-        dates = self.schema['dates']
-        if (
-            any([deadline['date'] == 'not provided' and deadline['rolling_basis'] != True for deadline in dates['deadlines']]) or
-            not any([deadline['priority'] == 'high' for deadline in dates['deadlines']])
-            ):
-            required_info.append('dates')
+        dates = schema["dates"]
 
-        return required_info
+        any_dates_missing = any([deadline["date"] == "not provided" and deadline["rolling_basis"] != True for deadline in dates["deadlines"]])
+        applicaton_deadline_missing = not any([deadline["priority"] == "high" for deadline in dates["deadlines"]])
+
+        if any_dates_missing or applicaton_deadline_missing:
+            target_info.append("dates")
+
+        return target_info
+    
+    def validate(self, schema):
+        target_info = []
+
+        dates = schema.dates
+
+        any_dates_missing = any([deadline["date"] == "not provided" and deadline["rolling_basis"] != True for deadline in dates.deadlines])
+        application_deadline_missing = not any([deadline["priority"] == "high" for deadline in dates.deadlines])
+
+        if any_dates_missing or application_deadline_missing:
+            target_info.append(Fields.DATES)
 
 class LocationsValidator(SchemaValidator):
-    def validate(self):
-        required_info = []
+    def validate_dict(self, schema:dict):
+        target_info = []
 
-        locations = self.schema['locations']
-        if any([site['virtual'] == 'not provided' for site in locations['locations']]):
-            required_info.append('locations')
+        locations = schema["locations"]
+        
+        any_virtual_unknown = any([site["virtual"] == "not provided" for site in locations["locations"]])
 
-        return required_info
+        if any_virtual_unknown:
+            target_info.append("locations")
+
+        return target_info
+    
+    def validate(self, schema):
+        target_info = []
+
+        locations = schema.locations
+
+        any_virtual_unknown = any([site["virtual"] == "not provided" for site in locations.locations])
+
+        if any_virtual_unknown:
+            target_info.append(Fields.LOCATIONS)
+
+        return target_info
 
 class CostsValidator(SchemaValidator):
-    def validate(self):
-        required_info = []
+    def validate_dict(self, schema:dict):
+        target_info = []
 
-        costs = self.schema['costs']
-        if any([plan['free'] == 'not provided' for plan in costs['costs']]):
-            required_info.append('costs')
+        costs = schema["costs"]
+        
+        any_free_unknown = any([plan["free"] == "not provided" for plan in costs["costs"]])
+        
+        if any_free_unknown:
+            target_info.append("costs")
 
-        return required_info
+        return target_info
+    
+    def validate(self, schema):
+        target_info = []
+
+        costs = schema.costs
+
+        any_free_unknown = any([plan["free"] == "not provided" for plan in costs["costs"]])
+
+        if any_free_unknown:
+            target_info.append(Fields.COSTS)
+
+        return target_info
 
 class ContactValidator(SchemaValidator):
-    def validate(self):
-        required_info = []
+    def validate_dict(self, schema:dict):
+        target_info = []
 
-        contact = self.schema['contact']
-        if list(contact['contact'].values()) == ['not provided', 'not provided']:
-            required_info.append('contact')
+        contact = schema["contact"]
+        
+        contact_unknown = list(contact["contact"].values()) == ["not provided", "not provided"]
+        
+        if contact_unknown:
+            target_info.append("contact")
 
-        return required_info
+        return target_info
+    
+    def validate(self, schema):
+        target_info = []
+
+        contact = schema.contact
+
+        contact_unknown = list(contact["contact"].values()) == ["not provided", "not provided"]
+
+        if contact_unknown:
+            target_info.append(Fields.CONTACT)
+
+        return target_info
 
 class SchemaValidationEngine:
     def __init__(self, schema):
-        self.validators = [OverviewValidator(schema),
-                           EligibilityValidator(schema),
-                           DatesValidator(schema),
-                           LocationsValidator(schema),
-                           CostsValidator(schema),
-                           ContactValidator(schema)]
+        self.validators = [
+            OverviewValidator,
+            EligibilityValidator,
+            DatesValidator,
+            LocationsValidator,
+            CostsValidator,
+            ContactValidator
+        ]
 
 
     def validate(self, strat:SchemaValidator, schema):
-        return strat.validate(schema)
+        return strat.validate_dict(schema)
     
-    def validate_all(self):
-        required_info = []
+    def validate_all(self, schema):
+        target_info = []
         for validator in self.validators:
-            required_info.extend(validator.validate())
+            target_info.extend(validator().validate(schema))
         
-        return required_info
+        return target_info
