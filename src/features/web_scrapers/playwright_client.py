@@ -2,6 +2,9 @@
 from playwright.async_api import async_playwright
 
 class PlaywrightClient:
+    """
+    The Playwright client to scrape the contents from a webpage given a URL.
+    """
     def __init__(self, headless=True):
         self.headless = headless
 

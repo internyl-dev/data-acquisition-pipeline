@@ -3,29 +3,49 @@ from pydantic import BaseModel
 from .queue_strategies import QueueStrategy, FIFO, FILO
 
 class QueueItem(BaseModel):
+    """
+    A URL object that contains important information like:
+    - The URL
+    - The target fields
+    - The scraping priority
+    """
     url: str
     target_fields: list[str]
     priority: int=0
     
 class Queue:
+    """
+    A container object that represents the queue of oncoming
+    objects to be scraped. Items can be deleted after being
+    added unlike with the `History` object.
+    \n
+    A queue strategy can be added upon instantiation to
+    determine the behavior of the queue methods.
+    """
     def __init__(self, strat:QueueStrategy=None):
         self.items = []
         self.default_strat = strat or FIFO
 
-    def add(self, item:QueueItem, strat:QueueStrategy=None):
+    def add(self, item:QueueItem, strat:QueueStrategy=None) -> None:
+        "Adds an item to the queue."
         strat = strat or self.default_strat
         strat_obj = strat(self.items)
         strat_obj.add(item)
         self.items = strat_obj._items
 
-    def get(self, strat:QueueStrategy=None):
+    def get(self, strat:QueueStrategy=None) -> any:
+        """
+        Returns an item from the queue given a strategy
+        along with its deletion.
+        """
         strat = strat or self.default_strat
         strat_obj = strat(self.items)
         item = strat_obj.get()
         self.items = strat_obj._items
         return item
     
-    def peek(self, strat:QueueStrategy=None):
+    def peek(self, strat:QueueStrategy=None) -> any:
+        "Returns an item from the queue without deletion."
         strat = strat or self.default_strat
         strat_obj = strat()
         item = strat_obj.peek()

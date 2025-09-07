@@ -117,28 +117,31 @@ class RootSchema(BaseModelConfig):
     contact: Contact = Contact()
 
 class SchemaModelFactory:
+    """
+    Makes Pydantic model objects.
+    """
     @staticmethod
-    def make_overview():
+    def make_overview() -> Overview:
         return Overview
     
     @staticmethod
-    def make_eligibility():
+    def make_eligibility() -> Eligibility:
         return Eligibility
     
     @staticmethod
-    def make_dates():
+    def make_dates() -> Dates:
         return Dates
     
     @staticmethod
-    def make_locations():
+    def make_locations() -> Locations:
         return Locations
     
     @staticmethod
-    def make_costs():
+    def make_costs() -> Costs:
         return Costs
 
     @staticmethod
-    def make_contact():
+    def make_contact() -> Contact:
         return Contact
     
     def _make_from_str(self, s:str):

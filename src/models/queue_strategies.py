@@ -7,18 +7,20 @@ class QueueStrategy(ABC):
     
     @abstractmethod
     def add(self, items):
-        "Add an item following the strategy"
+        "Add an item following the strategy."
 
     @abstractmethod
     def get(self):
-        "Get an item following the strategy"
+        "Get an item following the strategy and delete it from storage."
 
     @abstractmethod
     def peek(self):
-        ""
+        "Return the value of an item following the strategy without deletion."
 
 class FIFO(QueueStrategy):
-    
+    """
+    First in, first out strategy.
+    """
     def add(self, item):
         self._items.append(item)
     
@@ -29,7 +31,9 @@ class FIFO(QueueStrategy):
         return self._items[0] if self._items else None
 
 class FILO(QueueStrategy):
-    
+    """
+    First in, last out strategy.
+    """
     def add(self, item):
         self._items.append(item)
     
