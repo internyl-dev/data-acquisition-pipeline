@@ -1,7 +1,7 @@
 
 import json
 
-class Prompt:
+class Query:
     def __init__(self):
         self.prompt_architecture = {
             "schema_context": [],
@@ -27,9 +27,9 @@ class Prompt:
 
         return prompt
 
-class PromptBuilder:
+class QueryBuilder:
     def __init__(self, prompt_obj=None):
-        self.prompt_obj = prompt_obj or Prompt()
+        self.prompt_obj = prompt_obj or Query()
         self.schema_context = self.prompt_obj.prompt_architecture["schema_context"]
         self.program_context = self.prompt_obj.prompt_architecture["program_context"]
         self.webpage_contents = self.prompt_obj.prompt_architecture["webpage_contents"]

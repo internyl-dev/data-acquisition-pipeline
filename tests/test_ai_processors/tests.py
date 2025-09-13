@@ -1,8 +1,8 @@
 
 import unittest
 
-from src.features.ai_processors.prompts import PROMPTS
-from src.features.ai_processors import create_chat_prompt_template, PromptBuilder
+from features.ai_processors.prompt_constructors.instructions import INSTRUCTIONS
+from src.features.ai_processors import create_chat_prompt_template, QueryBuilder
 from src.models import ResponseModelFactory, Case
 
 class TestAIProcessors(unittest.TestCase):
@@ -43,11 +43,11 @@ class TestAIProcessors(unittest.TestCase):
     def test_prompt_builder(self):
         cases = [
             Case(
-                call=PromptBuilder().add_schema_context({"schema": "test"}).get_prompt_obj().get_prompt,
+                call=QueryBuilder().add_schema_context({"schema": "test"}).get_prompt_obj().get_prompt,
                 outp='ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA:\n{"schema": "test"}'
             ),
             Case(
-                call=PromptBuilder().add_title("title").get_prompt_obj().get_prompt,
+                call=QueryBuilder().add_title("title").get_prompt_obj().get_prompt,
                 outp='TARGET PROGRAM INFORMATION:\nTitle: title'
             )
         ]

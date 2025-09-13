@@ -1,5 +1,5 @@
 
-PROMPTS = {
+INSTRUCTIONS = {
     "overview": """
 You are given a partially filled JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. Your task is to update only the 'overview' section using information from the text after WEBPAGE CONTENTS START HERE.
 

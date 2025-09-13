@@ -7,7 +7,7 @@ from langchain.output_parsers import PydanticOutputParser
 
 from src.models import SchemaModelFactory
 from src.models import Fields
-from .prompts import PROMPTS
+from .prompt_constructors.instructions import INSTRUCTIONS
 
 
 load_dotenv()
@@ -38,6 +38,6 @@ def create_chat_prompt_template(required_info:str|Fields, factory=None):
             ("human", "{query}"),
             ("placeholder", "{agent_scratchpad}"),
         ]
-    ).partial(format_instructions=parser.get_format_instructions(), instructions=PROMPTS[required_info])
+    ).partial(format_instructions=parser.get_format_instructions(), instructions=INSTRUCTIONS[required_info])
 
     return prompt

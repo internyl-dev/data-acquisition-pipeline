@@ -12,7 +12,7 @@ from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
 from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
-from .features.ai_processors import azure_chat_openai, create_chat_prompt_template, PromptBuilder
+from .features.ai_processors import azure_chat_openai, create_chat_prompt_template, QueryBuilder
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter, minimize_required_info
 from .features.logger import Logger
 
@@ -74,42 +74,6 @@ class Main(Guards):
 
         return raw_html
     
-    def build_prompt(self, contents, required_info):
-        builder = PromptBuilder()
-        builder.add_schema_context(self.schema) \
-               .add_title(self.schema["overview"]["title"]) \
-               .add_description(self.schema["overview"]["description"]) \
-               .add_provider(self.schema["overview"]["provider"]) \
-               .add_webpage_contents(contents)
-        instructions = builder.get_prompt_obj().get_prompt()
-
-        chat_prompt_template = create_chat_prompt_template(required_info)
-        prompt = chat_prompt_template.format_prompt(query=instructions)
-
-        return prompt
-    
-    def ai_process_url(self, contents):
-        for target_info in self.all_target_info:
-
-            if len(self.all_target_info) == 6:
-                target_info = "all"
-            
-            trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
-            prompt = self.build_prompt(trimmed_contents, target_info)
-
-            self.log.update("Sending request...")
-            response = azure_chat_openai.invoke(prompt)
-
-            response_dict = json.loads(response.model_dump()["content"])
-            self.log.update(response_dict)
-            
-            if len(self.all_target_info) == 6:
-                self.schema = response_dict
-                break
-            else:
-                self.schema[target_info] = response_dict
-                continue
-    
     def queue_new_links(self, base_url, raw_soup):
 
         if base_url in self.queue:
@@ -153,8 +117,6 @@ class Main(Guards):
         raw_soup = BeautifulSoup(raw_html, "html.parser")
         raw_soup = self.declutterer.clean(raw_soup)
         contents = self.whitespace_cleaner.clean(raw_soup)
-
-        self.all_target_info = self.validator.validate_all(self.schema)
 
     def run(self, url:str, depth:int=2):
         
