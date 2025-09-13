@@ -2,8 +2,6 @@
 from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
-from .schema_fields import Fields
-
 # Type aliases
 OptionalBool = bool | Literal["not provided"]
 OptionalInt = int | Literal["not provided"]
@@ -117,34 +115,31 @@ class RootSchema(BaseModelConfig):
     contact: Contact = Contact()
 
 class SchemaModelFactory:
-    """
-    Makes Pydantic model objects.
-    """
     @staticmethod
-    def make_overview() -> Overview:
+    def make_overview():
         return Overview
     
     @staticmethod
-    def make_eligibility() -> Eligibility:
+    def make_eligibility():
         return Eligibility
     
     @staticmethod
-    def make_dates() -> Dates:
+    def make_dates():
         return Dates
     
     @staticmethod
-    def make_locations() -> Locations:
+    def make_locations():
         return Locations
     
     @staticmethod
-    def make_costs() -> Costs:
+    def make_costs():
         return Costs
 
     @staticmethod
-    def make_contact() -> Contact:
+    def make_contact():
         return Contact
     
-    def _make_from_str(self, s:str):
+    def make(self, s:str):
         sections = {
             "overview": self.make_overview,
             "eligibility": self.make_eligibility,
@@ -153,28 +148,8 @@ class SchemaModelFactory:
             "costs": self.make_costs,
             "contact": self.make_contact,
         }
+
         return sections[s]() if s != "all" else RootSchema
-    
-    def _make_from_enum(self, e:Fields):
-        match e:
-            case Fields.OVERVIEW:
-                return self.make_overview()
-            case Fields.ELIGIBILITY:
-                return self.make_eligibility()
-            case Fields.DATES:
-                return self.make_dates()
-            case Fields.LOCATIONS:
-                return self.make_locations()
-            case Fields.COSTS:
-                return self.make_costs()
-            case Fields.CONTACT:
-                return self.make_contact()
-            
-    def make(self, s:str|Fields):
-        if isinstance(s, str):
-            return self._make_from_str(s)
-        elif isinstance(s, Fields):
-            return self._make_from_enum(s)
     
 if __name__ == "__main__":
 
