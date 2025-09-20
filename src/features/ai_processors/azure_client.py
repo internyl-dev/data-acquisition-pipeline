@@ -22,6 +22,7 @@ azure_chat_openai = AzureChatOpenAI(
 )
 
 def create_chat_prompt_template(required_info:str|Fields, factory=None):
+    "Creates a `ChatPromptTemplate` object that which can be placed into a chat object when it is invoked"
     factory = factory or SchemaModelFactory()
     model = factory.make(required_info)
     parser = PydanticOutputParser(pydantic_object=model)
