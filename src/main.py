@@ -12,7 +12,7 @@ from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
 from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
-from .features.ai_processors import azure_chat_openai, create_chat_prompt_template, QueryBuilder
+from .features.ai_processors import PromptChain
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter, minimize_required_info
 from .features.logger import Logger
 
@@ -117,6 +117,8 @@ class Main(Guards):
         raw_soup = BeautifulSoup(raw_html, "html.parser")
         raw_soup = self.declutterer.clean(raw_soup)
         contents = self.whitespace_cleaner.clean(raw_soup)
+
+        response = PromptChain(self.schema).run(contents)
 
     def run(self, url:str, depth:int=2):
         

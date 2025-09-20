@@ -163,10 +163,12 @@ class SchemaValidationEngine:
         ]
 
 
-    def validate(self, strat:SchemaValidator, schema):
+    def validate(self, strat:SchemaValidator, schema) -> list[Fields]:
+        "Returns the field as an enum in a list if the field is missing needed information"
         return strat.validate_dict(schema)
     
-    def validate_all(self, schema):
+    def validate_all(self, schema) -> list[Fields]:
+        "Returns a list of all the enums of all the fields that have missing needed information"
         target_info = []
         for validator in self.validators:
             target_info.extend(validator().validate(schema))
