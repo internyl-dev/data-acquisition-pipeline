@@ -3,7 +3,7 @@ import unittest
 
 from src.features.ai_processors.prompt_constructors import QueryBuilder, SystemInstructionsBuilder, ChatPromptTemplateBuilder
 from src.features.ai_processors.prompt_constructors.instructions import INSTRUCTIONS
-from src.models import Case, Fields, RootSchema
+from src.models import Case, Fields, RootSchema, SchemaModelFactory
 
 class TestPromptChain(unittest.TestCase):
     def test_query_builder(self):
@@ -66,6 +66,22 @@ class TestPromptChain(unittest.TestCase):
                 case.test()
             )
 
-
+    def test_cpt_builder(self):
+        query = QueryBuilder().add_schema_context({"schema": "test"}) \
+                              .add_title("title") \
+                              .add_description("description") \
+                              .add_provider("provider") \
+                              .add_webpage_contents("webp contents") \
+                              .get_prompt_obj().get_prompt()
+        
+        instructions = SystemInstructionsBuilder().add_instructions(Fields.OVERVIEW) \
+                                                  .get_obj().get_instructions()
+        
+        cpt = ChatPromptTemplateBuilder().add_query(query) \
+                                         .add_instructions(instructions) \
+                                         .add_parser(Fields.OVERVIEW) \
+                                         .get_chat_prompt_template()
+        
+        print("Partial variables:\n\n", cpt.partial_variables)
 
 unittest.main()

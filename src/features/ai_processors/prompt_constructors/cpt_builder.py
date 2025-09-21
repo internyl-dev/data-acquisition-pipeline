@@ -8,10 +8,17 @@ from src.models import Fields
 
 class ChatPromptTemplateBuilder:
     "Builds a `ChatPromptTemplate` object"
-    def add_parser(self, required_info:str|Fields, factory=None) -> Self:
-        "Adds a `BaseModel` parser to be added to the `ChatPromptTemplate`"
+    def _create_parser_from_str(self, target_info:str, factory=None):
         factory = factory or SchemaModelFactory()
-        self.parser = factory.make(required_info)
+        self.parser = PydanticOutputParser(pydantic_object=factory.make(target_info))
+
+    def add_parser(self, target_info:str|Fields, factory=None) -> Self:
+        "Adds a `BaseModel` parser to be added to the `ChatPromptTemplate`"
+        if isinstance(target_info, Fields):
+            target_info = target_info.value
+        
+        self._create_parser_from_str(target_info)
+
         return self
 
     def add_instructions(self, instructions:str) -> Self:
@@ -49,5 +56,5 @@ class ChatPromptTemplateBuilder:
         """Returns the `ChatPromptTemplate` object created by the builder
         or builds it and then returns it if it hasn't been built yet"""
         if not hasattr(self, "chat_prompt_template"):
-            self._create_chat_prompt_template
+            self._create_chat_prompt_template()
         return self.chat_prompt_template
