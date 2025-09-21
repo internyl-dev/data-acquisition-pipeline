@@ -25,11 +25,11 @@ class Query:
 
     def get_prompt(self) -> str:
         "Returns the entire query as a string"
-        prompt = ""
+        prompt = []
         for key in self.prompt_architecture:
-            prompt += '\n'.join(self.prompt_architecture[key])
+            prompt.append('\n'.join(self.prompt_architecture[key]))
 
-        return prompt
+        return '\n'.join(prompt)
 
 class QueryBuilder:
     """
@@ -85,6 +85,8 @@ class QueryBuilder:
         return self
     
     def add_webpage_contents(self, contents:str):
+        if not self.webpage_contents:
+            self._add_webpage_contents_boiler()
         self.prompt_obj.add_webpage_contents(contents)
         return self
     
