@@ -24,6 +24,7 @@ class SystemInstructionsBuilder:
     def add_instructions(self, target_info:Fields):
         "Creates instructions based on the given enum target info"
         self.instructions_obj.instructions = INSTRUCTIONS[target_info.value]
+        return self
     
     def get_obj(self):
         return self.instructions_obj
