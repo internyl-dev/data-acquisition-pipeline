@@ -18,6 +18,7 @@ class Overview(BaseModelConfig):
     provider: str = "not provided"
     description: str = "not provided"
     link: None = None
+    favicon: str = "not provided"
     subject: list[str] = ["not provided"]
     tags: list[str] = ["not provided"]
 

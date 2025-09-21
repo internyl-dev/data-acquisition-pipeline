@@ -4,7 +4,7 @@ import json
 from src.features.content_summarizers import ContentTrimmer
 from src.features.logger import Logger
 from src.features.ai_processors import azure_chat_openai, create_chat_prompt_template
-from . import PromptChainPromptBuilder
+from .prompt_builder import PromptChainPromptBuilder
 
 from src.models import Fields
 from src.models import BaseModel
