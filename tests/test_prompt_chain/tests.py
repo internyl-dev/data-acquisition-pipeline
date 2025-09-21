@@ -2,6 +2,7 @@
 import unittest
 
 from src.features.ai_processors.prompt_constructors import QueryBuilder, SystemInstructionsBuilder, ChatPromptTemplateBuilder
+from src.features.ai_processors.prompt_chain import PromptChainPromptBuilder
 from src.features.ai_processors.prompt_constructors.instructions import INSTRUCTIONS
 from src.models import Case, Fields, RootSchema, SchemaModelFactory
 
@@ -56,7 +57,7 @@ class TestPromptChain(unittest.TestCase):
                 outp=INSTRUCTIONS["contact"]
             ),
             Case(
-                call=SystemInstructionsBuilder().legacy_add_instructions("contact").get_obj().get_instructions,
+                call=SystemInstructionsBuilder().add_instructions("contact").get_obj().get_instructions,
                 outp=INSTRUCTIONS["contact"]
             )
         ]
@@ -82,6 +83,21 @@ class TestPromptChain(unittest.TestCase):
                                          .add_parser(Fields.OVERVIEW) \
                                          .get_chat_prompt_template()
         
-        print("Partial variables:\n\n", cpt.partial_variables)
+        #print("Partial variables:\n\n", cpt.partial_variables)
+
+    def test_prompt_builder(self):
+        example_schema = {
+            "overview": {
+                "title": "TITLE",
+                "description": "DESCRIPTION",
+                "provider": "PROVIDER"
+            }
+        }
+        
+        example_webp_cont = "WEBPAGE CONTENTS"
+        
+        cpt = PromptChainPromptBuilder(example_schema, Fields.OVERVIEW).build(Fields.OVERVIEW, example_webp_cont)
+
+        print(cpt.partial_variables)
 
 unittest.main()

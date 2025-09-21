@@ -1,6 +1,6 @@
 
 from .base_schema_validator import SchemaValidator
-from src.models import Fields
+from src.models import Fields, BaseModel
 
 class OverviewValidator(SchemaValidator):
     def validate_dict(self, schema:dict):
@@ -152,7 +152,7 @@ class ContactValidator(SchemaValidator):
         return target_info
 
 class SchemaValidationEngine:
-    def __init__(self, schema):
+    def __init__(self):
         self.validators = [
             OverviewValidator,
             EligibilityValidator,
@@ -162,15 +162,20 @@ class SchemaValidationEngine:
             ContactValidator
         ]
 
-
     def validate(self, strat:SchemaValidator, schema) -> list[Fields]:
         "Returns the field as an enum in a list if the field is missing needed information"
-        return strat.validate_dict(schema)
+        if isinstance(schema, BaseModel):
+            return strat.validate(schema)
+        elif isinstance(schema, dict):
+            return strat.validate_dict(schema)
     
     def validate_all(self, schema) -> list[Fields]:
         "Returns a list of all the enums of all the fields that have missing needed information"
         target_info = []
         for validator in self.validators:
-            target_info.extend(validator().validate(schema))
+            if isinstance(schema, BaseModel):
+                return target_info.extend(validator().validate(schema))
+            elif isinstance(schema, dict):
+                return target_info.extend(validator().validate_dict(schema))
         
         return target_info

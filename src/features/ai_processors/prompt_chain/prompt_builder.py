@@ -19,12 +19,10 @@ class PromptChainPromptBuilder:
     """
     def __init__(self, schema: dict | BaseModel, all_target_info: list[str | Fields]=None,
                  validator=None):
-        self.validator = validator or SchemaValidationEngine()
 
         self.schema = schema
-        self.all_target_info = all_target_info or self.validator.validate_all(schema)
 
-    def _build_system_instructions(self, target_info) -> str:
+    def _build_system_instructions(self, target_info:str|Fields) -> str:
         "Automatically constructs the system instructions given some target info"
         builder = SystemInstructionsBuilder()
         builder.add_instructions(target_info)
@@ -82,10 +80,12 @@ class PromptChainPromptBuilder:
             prompt (ChatPromptTemplate): The object with which to pass as an argument into
             a chat object when invoking it
         """
-        if isinstance(target_info, Fields):
+        if isinstance(self.schema, BaseModel):
             build_query = self._build_query
-        elif isinstance(target_info, str):
+            print("is a basemodel")
+        elif isinstance(self.schema, dict):
             build_query = self._legacy_build_query
+            print("is a dict")
             
         instructions = self._build_system_instructions(target_info)
         query = build_query(contents)
