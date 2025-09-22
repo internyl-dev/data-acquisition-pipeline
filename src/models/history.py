@@ -6,7 +6,7 @@ class History:
     items and check whether or not the item has been stored. 
     """
     def __init__(self) -> None:
-        self.items = {}
+        self.items = set()
 
     def add(self, item) -> None:
         """
@@ -42,3 +42,14 @@ class History:
             item (any): The item to check.
         """
         return (item in self.items)
+    
+if __name__ == "__main__":
+    history = History()
+    history.add("url1")
+    history.add_all("url2", "url3")
+    print(history.items)
+    
+    history.add("url1")
+    print(history.items)
+
+    print(history.is_in("url1"))
