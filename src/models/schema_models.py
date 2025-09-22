@@ -1,6 +1,7 @@
 
 from typing import Literal
 from pydantic import BaseModel, ConfigDict
+from abc import ABC
 
 # Type aliases
 OptionalBool = bool | Literal["not provided"]
@@ -10,10 +11,13 @@ OptionalFloat = float | Literal["not provided"]
 class BaseModelConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
+class BaseSchemaSection(BaseModelConfig, ABC):
+    pass
+
 #==========#
 # OVERVIEW #
 #==========#
-class Overview(BaseModelConfig):
+class Overview(BaseSchemaSection):
     title: str = "not provided"
     provider: str = "not provided"
     description: str = "not provided"
@@ -25,28 +29,28 @@ class Overview(BaseModelConfig):
 #=============#
 # ELIGIBILITY #
 #=============#
-class Requirements(BaseModelConfig):
+class Requirements(BaseSchemaSection):
     essay_required: OptionalBool = "not provided"
     recommendation_required: OptionalBool = "not provided"
     transcript_required: OptionalBool = "not provided"
     other: list[str] = ["not provided"]
 
-class Age(BaseModelConfig):
+class Age(BaseSchemaSection):
     minimum: OptionalInt = "not provided"
     maximum: OptionalInt = "not provided"
 
-class Grades(BaseModelConfig):
+class Grades(BaseSchemaSection):
     grades: list[str] = ["not provided"]
     age: Age = Age()
 
-class Eligibility(BaseModelConfig):
+class Eligibility(BaseSchemaSection):
     requirements: Requirements = Requirements()
     eligibility: Grades = Grades()
 
 #=======#
 # DATES #
 #=======#
-class Deadline(BaseModelConfig):
+class Deadline(BaseSchemaSection):
     name: str = "not provided"
     priority: str = "not provided"
     term: str = "not provided"
@@ -54,12 +58,12 @@ class Deadline(BaseModelConfig):
     rolling_basis: OptionalBool = "not provided"
     time: str = "not provided"
 
-class Date(BaseModelConfig):
+class Date(BaseSchemaSection):
     term: str = "not provided"
     start: str = "not provided"
     end: str = "not provided"
 
-class Dates(BaseModelConfig):
+class Dates(BaseSchemaSection):
     deadlines: list[Deadline] = [Deadline()]
     dates: list[Date] = [Date()]
     duration_weeks: OptionalInt = "not provided"
@@ -67,47 +71,47 @@ class Dates(BaseModelConfig):
 #===========#
 # LOCATIONS #
 #===========#
-class Location(BaseModelConfig):
+class Location(BaseSchemaSection):
     virtual: OptionalBool = "not provided"
     state: str = "not provided"
     city: str = "not provided"
     address: str = "not provided"
 
-class Locations(BaseModelConfig):
+class Locations(BaseSchemaSection):
     locations: list[Location] = [Location()]
 
 #=======#
 # COSTS #
 #=======#
-class Cost(BaseModelConfig):
+class Cost(BaseSchemaSection):
     name: str = "not provided"
     free: OptionalBool = "not provided"
     lowest: OptionalFloat = "not provided"
     highest: OptionalFloat = "not provided"
     financial_aid_available: OptionalBool = "not provided"
 
-class Stipend(BaseModelConfig):
+class Stipend(BaseSchemaSection):
     available: OptionalBool = "not provided"
     amount: float | str = "not provided"
 
-class Costs(BaseModelConfig):
+class Costs(BaseSchemaSection):
     costs: list[Cost] = "not provided"
     stipend: Stipend = Stipend()
 
 #=========#
 # CONTACT #
 #=========#
-class ContactOptions(BaseModelConfig):
+class ContactOptions(BaseSchemaSection):
     email: str = "not provided"
     phone: str = "not provided"
 
-class Contact(BaseModelConfig):
+class Contact(BaseSchemaSection):
     contact: ContactOptions = ContactOptions()
 
 #=============#
 # ROOT SCHEMA #
 #=============#
-class RootSchema(BaseModelConfig):
+class RootSchema(BaseSchemaSection):
     overview: Overview = Overview()
     eligibility: Eligibility = Eligibility()
     dates: Dates = Dates()
@@ -157,3 +161,5 @@ if __name__ == "__main__":
     root_schema = RootSchema()
     root_schema.overview.title = "fffff"
     print(root_schema.overview.title)
+
+    print(isinstance(RootSchema().overview, BaseSchemaSection))

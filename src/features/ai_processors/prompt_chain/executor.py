@@ -7,7 +7,7 @@ from src.features.ai_processors import azure_chat_openai, create_chat_prompt_tem
 from .prompt_builder import PromptChainPromptBuilder
 
 from src.models import Fields
-from src.models import BaseModel
+from src.models import BaseSchemaSection
 
 class PromptChainExecutor:
     """
@@ -16,11 +16,11 @@ class PromptChainExecutor:
     and second invokes the model over a loop that aims to collect all required target information. 
 
     Args:
-        schema (dict | BaseModel): The schema in any state (populated or unpopulated)
+        schema (dict | BaseSchemaSection): The schema in any state (populated or unpopulated)
         all_target_info (list[str | Fields]): The target information during the prompt chain
     """
     def __init__(self, 
-                 schema: dict|BaseModel, 
+                 schema: dict|BaseSchemaSection, 
                  all_target_info:list[str|Fields]=None, 
                  validator=None, trimmer=None, log=None):
         self.trimmer = trimmer or ContentTrimmer()
@@ -34,7 +34,7 @@ class PromptChainExecutor:
         "The clause for when to activate bulk extraction"
         return len(target_info) == 6
 
-    def run(self, contents) -> BaseModel:
+    def run(self, contents) -> BaseSchemaSection:
         """Loops through the target info at each iteration 
         makeing a prompt object, passing it into a chat, 
         invoking the chat, and updating the current schema"""

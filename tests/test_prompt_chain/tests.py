@@ -93,11 +93,17 @@ class TestPromptChain(unittest.TestCase):
                 "provider": "PROVIDER"
             }
         }
+
+        example_base_model = RootSchema()
         
         example_webp_cont = "WEBPAGE CONTENTS"
-        
-        cpt = PromptChainPromptBuilder(example_schema, Fields.OVERVIEW).build(Fields.OVERVIEW, example_webp_cont)
 
-        print(cpt.partial_variables)
+        print(type(SchemaModelFactory().make_contact()))
+        
+        cpt = PromptChainPromptBuilder(example_schema).build(Fields.OVERVIEW, example_webp_cont)
+        cpt_from_base_model = PromptChainPromptBuilder(example_base_model).build(Fields.CONTACT, example_webp_cont)
+
+        #print(cpt.partial_variables)
+        print(cpt_from_base_model.partial_variables)
 
 unittest.main()

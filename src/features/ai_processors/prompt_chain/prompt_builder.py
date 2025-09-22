@@ -2,7 +2,7 @@
 from ..prompt_constructors import SystemInstructionsBuilder, QueryBuilder, ChatPromptTemplateBuilder, ChatPromptTemplate
 from src.features.schema_validators import SchemaValidationEngine
 
-from src.models import BaseModel, Fields
+from src.models import BaseSchemaSection, Fields
 
 class PromptChainPromptBuilder:
     """
@@ -12,12 +12,12 @@ class PromptChainPromptBuilder:
     current state of the schema or the required information passed into it
 
     Args:
-        schema (dict | BaseModel): The schema which will be used to get all target
+        schema (dict | BaseSchemaSection): The schema which will be used to get all target
         info
         all_target_info (list[str | Fields]): The information for the model to find
         which will be included in the query
     """
-    def __init__(self, schema: dict | BaseModel, all_target_info: list[str | Fields]=None,
+    def __init__(self, schema: dict | BaseSchemaSection,
                  validator=None):
 
         self.schema = schema
@@ -43,7 +43,7 @@ class PromptChainPromptBuilder:
         return query_obj.get_prompt()
     
     def _build_query(self, contents) -> str:
-        "Automatically constructs the query given the BaseModel schema and some webpage contents"
+        "Automatically constructs the query given the BaseSchemaSection schema and some webpage contents"
         builder = QueryBuilder()
         builder.add_schema_context(self.schema) \
                .add_title(self.schema.overview.title) \
@@ -80,9 +80,9 @@ class PromptChainPromptBuilder:
             prompt (ChatPromptTemplate): The object with which to pass as an argument into
             a chat object when invoking it
         """
-        if isinstance(self.schema, BaseModel):
+        if isinstance(self.schema, BaseSchemaSection):
             build_query = self._build_query
-            print("is a basemodel")
+            print("is a BaseSchemaSection")
         elif isinstance(self.schema, dict):
             build_query = self._legacy_build_query
             print("is a dict")
