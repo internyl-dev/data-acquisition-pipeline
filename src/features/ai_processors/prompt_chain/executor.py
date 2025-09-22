@@ -33,6 +33,10 @@ class PromptChainExecutor:
     def _all_info_needed(self, target_info) -> bool:
         "The clause for when to activate bulk extraction"
         return len(target_info) == 6
+    
+    def _build_prompt(self, target_info, contents):
+        "Builds the prompt to pass into the chat model"
+        return self.prompt_builder.build(target_info, contents)
 
     def run(self, contents) -> BaseSchemaSection:
         """Loops through the target info at each iteration 
@@ -46,7 +50,7 @@ class PromptChainExecutor:
             
             trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
 
-            prompt = self.prompt_builder.build(target_info, trimmed_contents)
+            prompt = self._build_prompt(target_info, trimmed_contents)
 
             self.log.update("Sending request...")
             response = azure_chat_openai.invoke(prompt)
