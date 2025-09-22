@@ -6,7 +6,7 @@ class History:
     items and check whether or not the item has been stored. 
     """
     def __init__(self) -> None:
-        self.items = []
+        self.items = {}
 
     def add(self, item) -> None:
         """
@@ -16,7 +16,7 @@ class History:
         Args:
             item (any): The item to add into storage.
         """
-        self.items.append(item)
+        self.items.add(item)
     
     def add_all(self, *args) -> None:
         """
@@ -26,7 +26,7 @@ class History:
         Args:
             *items (any): The items to add into storage.
         """
-        self.items.extend(args)
+        self.items.update(args)
 
     def is_in(self, item) -> bool:
         """
