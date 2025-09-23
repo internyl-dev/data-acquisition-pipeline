@@ -4,6 +4,7 @@ import json
 from src.features.content_summarizers import ContentTrimmer
 from src.features.logger import Logger
 from src.features.ai_processors import azure_chat_openai, create_chat_prompt_template
+from src.features.schema_validators import SchemaValidationEngine
 from .prompt_builder import PromptChainPromptBuilder
 
 from src.models import Fields
@@ -25,9 +26,10 @@ class PromptChainExecutor:
                  validator=None, trimmer=None, log=None):
         self.trimmer = trimmer or ContentTrimmer()
         self.log = log or Logger()
+        self.validator = validator or SchemaValidationEngine()
 
         self.schema = schema
-
+        self.all_target_info = all_target_info or validator.validate_all()
         self.prompt_builder = PromptChainPromptBuilder(schema, all_target_info)
     
     def _all_info_needed(self, target_info) -> bool:
@@ -44,7 +46,7 @@ class PromptChainExecutor:
         invoking the chat, and updating the current schema"""
         for target_info in self.all_target_info:
 
-            if self._all_info_needed:
+            if self._all_info_needed(self.all_target_info):
                 # Bulk extraction activated
                 target_info = "all"
             

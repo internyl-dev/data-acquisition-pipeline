@@ -1,18 +1,16 @@
 
 import asyncio
-import json
 from bs4 import BeautifulSoup
-import logging
 from pprint import pp
 from dataclasses import dataclass
 
-from .models import History, FIFO, FILO, Queue, RootSchema
+from .models import History, FIFO, FILO, Queue, RootSchema, QueueItem
 
 from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
 from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
-from .features.ai_processors import PromptChainExecutor
+from .features.ai_processors.prompt_chain import PromptChainExecutor
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter, minimize_required_info
 from .features.logger import Logger
 
@@ -74,6 +72,12 @@ class Main(Guards):
 
         return raw_html
     
+    def add_to_queue(self, queue_item, all_target_info, raw_soup):
+        new_urls = self.url_extractor.extract(raw_soup)
+
+        for target_info in all_target_info:
+            filtered_urls = self.url_filter.filter()
+    
     def queue_new_links(self, base_url, raw_soup):
 
         if base_url in self.queue:
@@ -104,26 +108,41 @@ class Main(Guards):
                 else:
                     self.queue[filtered_url] = [required_info]
 
-    def first_run(self, url:str):
+    def run(self, url:str):
+        target_info = self.validator.validate_all(self.schema)
+        queue_item = QueueItem(url, target_info)
         self.base_url = url
+        self.schema.overview.link = self.base_url
+        self.schema.overview.favicon = self.scraper.scrape_favicon()
 
-        if self.received_all_target_info():
-            # Handle the fully populated schema case
+        self.r(queue_item)
+
+    def r(self, queue_item:QueueItem, depth:int=3):
+
+        url = queue_item.url
+        all_target_info = queue_item.target_fields
+
+        # Guards
+        if self.history.is_in(url):
             return
         
         self.history.add(url)
 
+        if not self.validator.validate_all:
+            return
+        if depth <= 0:
+            return
+        
         raw_html = self.scrape(url)
         raw_soup = BeautifulSoup(raw_html, "html.parser")
-        raw_soup = self.declutterer.clean(raw_soup)
-        contents = self.whitespace_cleaner.clean(raw_soup)
+        soup = self.declutterer.clean(raw_soup)
+        contents = self.whitespace_cleaner.clean(soup)
 
-        response = PromptChainExecutor(self.schema).run(contents)
+        response = PromptChainExecutor(self.schema, all_target_info).run(contents)
 
-    def run(self, url:str, depth:int=2):
-        
-        if not hasattr(self, "url"):
-            self.url = url
+
+
+    def run_loop(self, url:str, depth:int=2):
 
         if any([
             self.url_in_history(url),
@@ -154,6 +173,6 @@ class Main(Guards):
         self.log.update(self.queue)
 
         while self.queue:
-            self.run(depth=depth-1, url=list(self.queue.keys())[0])
+            self.run_loop(depth=depth-1, url=list(self.queue.keys())[0])
 
         return

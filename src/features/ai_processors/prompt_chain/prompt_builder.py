@@ -1,6 +1,5 @@
 
 from ..prompt_constructors import SystemInstructionsBuilder, QueryBuilder, ChatPromptTemplateBuilder, ChatPromptTemplate
-from src.features.schema_validators import SchemaValidationEngine
 
 from src.models import BaseSchemaSection, Fields
 
@@ -17,8 +16,7 @@ class PromptChainPromptBuilder:
         all_target_info (list[str | Fields]): The information for the model to find
         which will be included in the query
     """
-    def __init__(self, schema: dict | BaseSchemaSection,
-                 validator=None):
+    def __init__(self, schema: dict | BaseSchemaSection):
 
         self.schema = schema
 

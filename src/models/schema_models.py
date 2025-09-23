@@ -95,7 +95,7 @@ class Stipend(BaseSchemaSection):
     amount: float | str = "not provided"
 
 class Costs(BaseSchemaSection):
-    costs: list[Cost] = "not provided"
+    costs: list[Cost] = [Cost()]
     stipend: Stipend = Stipend()
 
 #=========#
