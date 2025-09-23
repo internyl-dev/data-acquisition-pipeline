@@ -53,18 +53,14 @@ class Queue:
 
     def is_in(self, item:QueueItem):
         """
-        Checks whether or not an item is in storage. The
-        item has to be an object reference and will check
-        whether or not it is in storage based on the __eq__
-        method.
+        Checks whether an item has the same link
+        as another item in the current queue.
         \n
-        **TLDR**; If an equivalent item is in storage, it'll
-        return `True`.
-
         Args:
             item (any): The item to check.
         """
-        return (item in self.items)
+        items = [item.url for item in self.items]
+        return (item.url in items)
 
 if __name__ == "__main__":
 
@@ -81,3 +77,6 @@ if __name__ == "__main__":
     print(item)
 
     print(queue.items)
+
+    item3 = QueueItem(url="second", target_fields=["another item"])
+    print(queue.is_in(item3))
