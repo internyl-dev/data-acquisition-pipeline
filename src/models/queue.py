@@ -51,6 +51,20 @@ class Queue:
         item = strat_obj.peek()
         return item
 
+    def is_in(self, item:QueueItem):
+        """
+        Checks whether or not an item is in storage. The
+        item has to be an object reference and will check
+        whether or not it is in storage based on the __eq__
+        method.
+        \n
+        **TLDR**; If an equivalent item is in storage, it'll
+        return `True`.
+
+        Args:
+            item (any): The item to check.
+        """
+        return (item in self.items)
 
 if __name__ == "__main__":
 
