@@ -2,9 +2,10 @@
 import re
 
 from .url_keywords import LINK_KEYWORDS
+from src.models import Fields
 
 class URLFilter:
-    def filter(self, urls:dict, required_info:str):
+    def filter(self, urls:dict, target_info:str|Fields):
         """
         Filters all anchor elements based on their content and URL with keywords corresponding to the required info.
 
@@ -15,9 +16,12 @@ class URLFilter:
         Returns:
             href[urls] (dict): Only the links that contain the relevant keywords in either their content or url
         """
+        if isinstance(target_info, Fields):
+            target_info = target_info.value
+            
         filtered_links = {}
         for href in urls:
-            for keyword in LINK_KEYWORDS[required_info]:
+            for keyword in LINK_KEYWORDS[target_info]:
 
                 # If the keyword was found in the text or HREF, add it to the new dictionary
                 if re.search(fr'{keyword}', href, re.I) or re.search(fr'{keyword}', urls[href], re.I):
