@@ -1,6 +1,7 @@
 
 from pydantic import BaseModel
 from .queue_strategies import QueueStrategy, FIFO, FILO
+from .schema_fields import Fields
 
 class QueueItem(BaseModel):
     """
@@ -10,17 +11,17 @@ class QueueItem(BaseModel):
     - The scraping priority
     """
     url: str
-    target_fields: list[str]
+    target_fields: list[str | Fields]
     priority: int=0
     
 class Queue:
     """
     A container object that represents the queue of oncoming
     objects to be scraped. Items can be deleted after being
-    added unlike with the `History` object.
+    added unlike with the `History` object
     \n
     A queue strategy can be added upon instantiation to
-    determine the behavior of the queue methods.
+    determine the behavior of the queue methods
     """
     def __init__(self, strat:QueueStrategy=None):
         self.items = []
@@ -33,7 +34,7 @@ class Queue:
         strat_obj.add(item)
         self.items = strat_obj._items
 
-    def get(self, strat:QueueStrategy=None) -> any:
+    def get(self, strat:QueueStrategy=None) -> QueueItem:
         """
         Returns an item from the queue given a strategy
         along with its deletion.
@@ -44,23 +45,42 @@ class Queue:
         self.items = strat_obj._items
         return item
     
-    def peek(self, strat:QueueStrategy=None) -> any:
-        "Returns an item from the queue without deletion."
+    def peek(self, strat:QueueStrategy=None) -> QueueItem:
+        "Returns an item from the queue without deletion"
         strat = strat or self.default_strat
         strat_obj = strat()
         item = strat_obj.peek()
         return item
 
-    def is_in(self, item:QueueItem):
+    def is_in(self, item:QueueItem) -> bool:
         """
         Checks whether an item has the same link
-        as another item in the current queue.
+        as another item in the current queue
         \n
         Args:
-            item (any): The item to check.
+            item (any): The item to check
         """
         items = [item.url for item in self.items]
         return (item.url in items)
+    
+    def find(self, item:QueueItem) -> QueueItem | None:
+        """
+        Returns the `QueueItem` object that has the 
+        same link as the argument `QueueItem`object
+        """
+        return next((q_item for q_item in self.items if q_item.url == item.url), None)
+    
+    def replace(self, item:QueueItem) -> None:
+        """
+        Replaces the item in the queue that has the same
+        link as the argument given with the argument
+        """
+        q_item = self.find(item)
+        if q_item:
+            index = self.items.index(q_item)
+            self.items[index] = item
+
+    
 
 if __name__ == "__main__":
 
@@ -80,3 +100,6 @@ if __name__ == "__main__":
 
     item3 = QueueItem(url="second", target_fields=["another item"])
     print(queue.is_in(item3))
+
+    queue.replace(item3)
+    print(queue.items)
