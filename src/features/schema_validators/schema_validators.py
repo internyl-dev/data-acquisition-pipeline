@@ -217,7 +217,6 @@ class SchemaValidationEngine:
                 info = validator(self.return_str).validate(schema)
             elif isinstance(schema, dict):
                 info = validator(self.return_str).validate_dict(schema)
-            print(info)
             target_info.extend(info)
         
         return target_info

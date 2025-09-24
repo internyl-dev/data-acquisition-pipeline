@@ -80,10 +80,8 @@ class PromptChainPromptBuilder:
         """
         if isinstance(self.schema, BaseSchemaSection):
             build_query = self._build_query
-            print("is a BaseSchemaSection")
         elif isinstance(self.schema, dict):
             build_query = self._legacy_build_query
-            print("is a dict")
             
         instructions = self._build_system_instructions(target_info)
         query = build_query(contents)

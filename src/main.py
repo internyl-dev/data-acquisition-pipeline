@@ -60,10 +60,11 @@ class Main(Guards):
         self.url_filter         = self.url_filter         or URLFilter()
 
         self.log = Logger(log_mode=self.log_mode)
+        self.log.create_logging_files()
         self.log.apply_conditional_logging()
 
     def scrape(self, url):
-        self.log.update("Scraping...")
+        self.log.update("TRIMMER: Scraping...")
         try:
             raw_html = asyncio.run(self.scraper.scrape_url(url))
         except Exception as e:
@@ -76,44 +77,31 @@ class Main(Guards):
         new_urls = self.url_extractor.extract(raw_soup)
 
         for target_info in all_target_info:
-            filtered_urls = self.url_filter.filter()
-    
-    def queue_new_links(self, base_url, raw_soup):
-
-        if base_url in self.queue:
-            minimize_required_info(base_url, 1)
-            self.all_target_info = self.queue[base_url]
-        else:
-            self.all_target_info = SchemaValidationEngine().validate_all(self.schema)
-        self.log.update(self.all_target_info)
-
-        new_urls = self.url_extractor.extract(raw_soup)
-        
-        for required_info in self.all_target_info:
-            filtered_urls = self.url_filter.filter(new_urls, required_info)
+            filtered_urls = self.url_filter.filter(new_urls, target_info)
             for filtered_url in filtered_urls.values():
-
-                filtered_url = self.url_processor.process_url(base_url, filtered_url)
+                filtered_url = self.url_processor.process_url(queue_item.url, filtered_url)
+                new_queue_item = QueueItem(filtered_url, target_fields=[target_info])
 
                 # Skip links we've already visited
-                if filtered_url in self.history:
+                if self.history.is_in(new_queue_item.url):
                     continue
 
-                # If link is in queue: add info if it was not already there
-                elif filtered_url in self.queue:
-                    if required_info not in self.queue[filtered_url]:
-                        self.queue[filtered_url].append(required_info)
+                # If link is in queue, add info if it was not already there
+                elif self.queue.is_in(new_queue_item):
+                    q_item = self.queue.find(queue_item)
+                    if q_item and target_info not in q_item.target_fields:
+                        q_item.target_fields.append(target_info)
+                        self.queue.replace(q_item)
 
-                # Link is not in history or queue: add it into the queue
                 else:
-                    self.queue[filtered_url] = [required_info]
+                    self.queue.add(new_queue_item)
 
     def run(self, url:str):
         target_info = self.validator.validate_all(self.schema)
         queue_item = QueueItem(url, target_info)
         self.base_url = url
         self.schema.overview.link = self.base_url
-        self.schema.overview.favicon = self.scraper.scrape_favicon()
+        #self.schema.overview.favicon = asyncio.run(self.scraper.scrape_favicon())
 
         self.r(queue_item)
 
@@ -138,41 +126,18 @@ class Main(Guards):
         soup = self.declutterer.clean(raw_soup)
         contents = self.whitespace_cleaner.clean(soup)
 
-        response = PromptChainExecutor(self.schema, all_target_info).run(contents)
+        response = PromptChainExecutor(schema=self.schema, all_target_info=all_target_info, log=self.log).run(contents)
+        self.log.update(response)
+        self.schema = response
 
+        all_target_info = self.validator.validate_all(self.schema)
+        self.log.update(f"VALIDATOR: STILL NEED THE FOLLOWING INFO: {all_target_info}")
+        self.add_to_queue(queue_item, all_target_info, raw_soup)
 
-
-    def run_loop(self, url:str, depth:int=2):
-
-        if any([
-            self.url_in_history(url),
-            self.max_depth_reached(depth),
-            self.received_all_target_info()
-        ]):
-            self.history.append(url)
-            self.queue.pop(url, None)
-            return
+        while True:
+            next_queue_item = self.queue.get()
+            if not next_queue_item:
+                break
+            self.r(next_queue_item, depth=depth-1)
         
-        self.history.append(url)
-        self.queue.pop(url, None)
-
-        raw_html = self.scrape(url)
-        raw_soup = BeautifulSoup(raw_html, "html.parser")
-        raw_soup = self.declutterer.clean(raw_soup)
-        contents = self.whitespace_cleaner.clean(raw_soup)
-
-        if url in self.queue:
-            minimize_required_info(url, 1)
-            self.all_target_info = self.queue[url]
-        else:
-            self.all_target_info = SchemaValidationEngine(self.schema).validate_all()
-
-        self.ai_process_url(contents)
-        
-        self.queue_new_links(url, raw_soup)
-        self.log.update(self.queue)
-
-        while self.queue:
-            self.run_loop(depth=depth-1, url=list(self.queue.keys())[0])
-
         return

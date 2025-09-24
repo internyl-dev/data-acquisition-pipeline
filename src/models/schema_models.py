@@ -3,6 +3,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 from abc import ABC
 
+from .schema_fields import Fields
+
 # Type aliases
 OptionalBool = bool | Literal["not provided"]
 OptionalInt = int | Literal["not provided"]
@@ -21,7 +23,7 @@ class Overview(BaseSchemaSection):
     title: str = "not provided"
     provider: str = "not provided"
     description: str = "not provided"
-    link: None = None
+    link: str = None
     favicon: str = "not provided"
     subject: list[str] = ["not provided"]
     tags: list[str] = ["not provided"]
@@ -119,6 +121,18 @@ class RootSchema(BaseSchemaSection):
     costs: Costs = Costs()
     contact: Contact = Contact()
 
+    def get(self, section):
+        if section == Fields.OVERVIEW:
+            return self.overview
+        if section == Fields.ELIGIBILITY:
+            return self.eligibility
+        if section == Fields.DATES:
+            return self.dates
+        if section == Fields.COSTS:
+            return self.costs
+        if section == Fields.CONTACT:
+            return self.contact
+
 class SchemaModelFactory:
     @staticmethod
     def make_overview():
@@ -144,7 +158,10 @@ class SchemaModelFactory:
     def make_contact():
         return Contact
     
-    def make(self, s:str):
+    def make(self, s:str|Fields):
+        if isinstance(s, Fields):
+            s = s.value
+            
         sections = {
             "overview": self.make_overview,
             "eligibility": self.make_eligibility,

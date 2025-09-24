@@ -3,7 +3,7 @@ import logging
 import datetime
 import os
 import sys
-from pprint import pp
+from pprint import pp, pprint
 
 from .base_observer import Observer
 
@@ -71,7 +71,6 @@ class Logger(Observer):
         # API Log
         self.api_log = open(f"{current_dir_path}/api_transaction.txt", 'a')
 
-
     def apply_conditional_logging(self):
         """
         Creates and applies a wrapper to every single `logging` method to write the output into a logging file
@@ -92,7 +91,8 @@ class Logger(Observer):
                     message = args[0]
 
                 func(message)
-                pp(message)
+                pprint(message)
+                print()
                 return
                 
             return wrapper

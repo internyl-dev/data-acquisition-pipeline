@@ -35,9 +35,7 @@ def create_chat_prompt_template(required_info:str|Fields, factory=None):
                 Wrap the output in this format and provide no other text\n{format_instructions}
                 """,
             ),
-            ("placeholder", "{chat_history}"),
             ("human", "{query}"),
-            ("placeholder", "{agent_scratchpad}"),
         ]
     ).partial(format_instructions=parser.get_format_instructions(), instructions=INSTRUCTIONS[required_info])
 
