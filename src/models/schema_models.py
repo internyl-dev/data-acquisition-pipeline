@@ -1,5 +1,5 @@
 
-from typing import Literal
+from typing import *
 from pydantic import BaseModel, ConfigDict
 from abc import ABC
 
@@ -23,7 +23,7 @@ class Overview(BaseSchemaSection):
     title: str = "not provided"
     provider: str = "not provided"
     description: str = "not provided"
-    link: str = None
+    link: str = "not provided"
     favicon: str = "not provided"
     subject: list[str] = ["not provided"]
     tags: list[str] = ["not provided"]
@@ -94,7 +94,7 @@ class Cost(BaseSchemaSection):
 
 class Stipend(BaseSchemaSection):
     available: OptionalBool = "not provided"
-    amount: float | str = "not provided"
+    amount: Optional[Union[float, str]] = "not provided"
 
 class Costs(BaseSchemaSection):
     costs: list[Cost] = [Cost()]
@@ -161,7 +161,7 @@ class SchemaModelFactory:
     def make(self, s:str|Fields):
         if isinstance(s, Fields):
             s = s.value
-            
+
         sections = {
             "overview": self.make_overview,
             "eligibility": self.make_eligibility,
@@ -180,3 +180,4 @@ if __name__ == "__main__":
     print(root_schema.overview.title)
 
     print(isinstance(RootSchema().overview, BaseSchemaSection))
+    print(root_schema.model_dump())

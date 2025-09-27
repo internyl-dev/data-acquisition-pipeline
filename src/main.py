@@ -100,10 +100,11 @@ class Main(Guards):
         target_info = self.validator.validate_all(self.schema)
         queue_item = QueueItem(url, target_info)
         self.base_url = url
-        self.schema.overview.link = self.base_url
-        #self.schema.overview.favicon = asyncio.run(self.scraper.scrape_favicon())
 
         self.r(queue_item)
+
+        self.schema.overview.link = self.base_url
+        self.schema.overview.favicon = asyncio.run(self.scraper.scrape_favicon(url))
 
     def r(self, queue_item:QueueItem, depth:int=3):
 

@@ -1,6 +1,7 @@
 
-from ..prompt_constructors import SystemInstructionsBuilder, QueryBuilder, ChatPromptTemplateBuilder, ChatPromptTemplate
+import json
 
+from ..prompt_constructors import SystemInstructionsBuilder, QueryBuilder, ChatPromptTemplateBuilder, ChatPromptTemplate
 from src.models import BaseSchemaSection, Fields
 
 class PromptChainPromptBuilder:
@@ -43,14 +44,14 @@ class PromptChainPromptBuilder:
     def _build_query(self, contents) -> str:
         "Automatically constructs the query given the BaseSchemaSection schema and some webpage contents"
         builder = QueryBuilder()
-        builder.add_schema_context(self.schema) \
+        builder.add_schema_context(json.dumps(self.schema.model_json_schema())) \
                .add_title(self.schema.overview.title) \
                .add_description(self.schema.overview.description) \
                .add_provider(self.schema.overview.provider) \
                .add_webpage_contents(contents)
         query_obj = builder.get_prompt_obj()
 
-        return query_obj
+        return query_obj.get_prompt()
     
     def _build_prompt(self, target_info, instructions, query) -> ChatPromptTemplate:
         """Automatically constructs a `ChatPromptTemplate` object 

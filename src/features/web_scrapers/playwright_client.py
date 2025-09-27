@@ -2,6 +2,7 @@
 from playwright.async_api import async_playwright
 from urllib.parse import urljoin
 from typing import Optional
+import asyncio
 
 class PlaywrightClient:
     """
@@ -30,7 +31,7 @@ class PlaywrightClient:
         
         return raw_html
     
-    async def scrape_favicon(url: str) -> str:
+    async def scrape_favicon(self, url: str) -> str:
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             page = await browser.new_page()
@@ -54,3 +55,7 @@ class PlaywrightClient:
             await browser.close()
 
             return favicon_url or urljoin(url, "/favicon.ico")
+        
+if __name__ == "__main__":
+    scraper = PlaywrightClient()
+    print(asyncio.run(scraper.scrape_favicon("https://www.nyhistory.org/education/student-historian-internship-program")))

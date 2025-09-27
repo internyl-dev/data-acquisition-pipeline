@@ -18,7 +18,7 @@ class FirebaseClient:
         # Get a Firestore client
         self.database = firestore.client()
 
-        self.logger.debug("Firebase Admin SDK initialized and Firestore client ready!")
+        #self.logger.debug("Firebase Admin SDK initialized and Firestore client ready!")
 
     def add_new_data(self, collection_name: str, data: dict):
         """
@@ -36,9 +36,9 @@ class FirebaseClient:
             # Add the document
             update_time, doc_ref = collection_ref.add(data)
 
-            self.logger.debug(f"Document added with ID: {doc_ref.id} at {update_time}")
+            #self.logger.debug(f"Document added with ID: {doc_ref.id} at {update_time}")
             return doc_ref.id
         
         except Exception as e:
-            self.logger.error(f"Error adding document: {e}")
+            #self.logger.error(f"Error adding document: {e}")
             return None

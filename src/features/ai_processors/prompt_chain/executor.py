@@ -30,7 +30,7 @@ class PromptChainExecutor:
         self.validator = validator or SchemaValidationEngine()
 
         self.schema = schema
-        self.all_target_info = all_target_info or validator.validate_all()
+        self.all_target_info = all_target_info or self.validator.validate_all(self.schema)
         self.prompt_builder = PromptChainPromptBuilder(schema)
     
     def _all_info_needed(self, target_info) -> bool:
@@ -56,6 +56,7 @@ class PromptChainExecutor:
             trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
 
             prompt = self._build_prompt(target_info, trimmed_contents)
+            self.log.update(prompt.partial_variables)
             parser = PydanticOutputParser(pydantic_object=self.factory.make(target_info))
             prompt_value = prompt.format_prompt()
 
