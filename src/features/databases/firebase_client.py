@@ -6,6 +6,8 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
+from src.models import BaseSchemaSection
+
 dotenv.load_dotenv()
 
 class FirebaseClient:
@@ -19,26 +21,47 @@ class FirebaseClient:
         self.database = firestore.client()
 
         #self.logger.debug("Firebase Admin SDK initialized and Firestore client ready!")
-
-    def add_new_data(self, collection_name: str, data: dict):
-        """
-        Adds a new document to a specified collection with an auto-generated ID.
-        Returns `None` and logs an error if it fails to add the document.
-
-        Args:
-            collection_name (str): Name of collection in Firestore
-            data (dict): Data to add
-        """
-        try:
-            # Get a reference to the collection
-            collection_ref = self.database.collection(collection_name)
-
-            # Add the document
-            update_time, doc_ref = collection_ref.add(data)
-
-            #self.logger.debug(f"Document added with ID: {doc_ref.id} at {update_time}")
-            return doc_ref.id
         
+    def _get_name_index(self, collection_path:str, document:dict|BaseSchemaSection):
+        if isinstance(document, dict):
+            link = document["overview"]["link"].replace("/", "\\")
+        elif isinstance(document, BaseSchemaSection):
+            link = document.overview.link.replace("/", "\\")
+        else:
+            raise "Document is neither a dictionary nor a BaseSchemaSection"
+
+        documents = self.read_documents(collection_path)
+        documents_with_link = [doc for doc in documents if link in doc]
+        
+        if not documents_with_link:
+            next_index = 0
+        else:
+            indexes = [int(doc[-1]) for doc in documents_with_link]
+            next_index = max(indexes) + 1
+        
+        return f"{link}-{next_index}"
+
+    def save(self, collection_path:str, document:dict|BaseSchemaSection, set_index:bool=False):
+        try:
+            collection_ref = self.database.collection(collection_path)
+            if set_index:
+                document_name = self._get_name_index(collection_path, document)
+                collection_ref.document(document_name).set(document)
+            else:
+                update_item, doc_ref = collection_ref.add(document)
+
         except Exception as e:
-            #self.logger.error(f"Error adding document: {e}")
-            return None
+            raise e
+
+    def set(self, id:str, document:dict|BaseSchemaSection):
+        pass
+
+    def get_by_id(self, id:str):
+        pass
+
+    def get_all_data(self, collection_path:str):
+        pass
+
+    def delete_by_id(self, id:str):
+        pass
+
