@@ -56,7 +56,7 @@ class PromptChainExecutor:
             trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
 
             prompt = self._build_prompt(target_info, trimmed_contents)
-            self.log.update(prompt.partial_variables)
+            #self.log.update(prompt.partial_variables)
             parser = PydanticOutputParser(pydantic_object=self.factory.make(target_info))
             prompt_value = prompt.format_prompt()
 
@@ -73,6 +73,7 @@ class PromptChainExecutor:
                 self.log.update(f"PROMPT EXECUTOR: Parsing error: {e}")
                 response_dict = json.loads(response.content)
                 self.log.update(response_dict)
+                raise e
             
             if len(self.all_target_info) == 6:
                 self.schema = parsed_schema

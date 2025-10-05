@@ -30,7 +30,7 @@ class FirebaseClient:
         else:
             raise "Document is neither a dictionary nor a BaseSchemaSection"
 
-        documents = self.read_documents(collection_path)
+        documents = self.get_all_data(collection_path)
         documents_with_link = [doc for doc in documents if link in doc]
         
         if not documents_with_link:
@@ -60,7 +60,10 @@ class FirebaseClient:
         pass
 
     def get_all_data(self, collection_path:str):
-        pass
+        collection_ref = self.database.collection(collection_path)
+        documents = collection_ref.stream()
+
+        return {document.id: document.to_dict() for document in documents}
 
     def delete_by_id(self, id:str):
         pass

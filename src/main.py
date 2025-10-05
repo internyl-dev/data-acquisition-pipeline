@@ -111,21 +111,24 @@ class Main:
 
         # Guards
         if self.history.is_in(url):
+            self.log.update(f"{queue_item.url} already in queue, returning...")
             return
         
         self.history.add(url)
 
         if depth <= 0:
+            self.log.update(f"Max depth reached, returning...")
             return
         
         if self.queue.get_length() > 3:
             self.log.update("Excessively large queue length detected. " \
                             "Attempting to minimize target info...")
             self.log.update(queue_item.target_fields)
-            minimize_required_info(queue_item, self.validator.validate(self.schema))
+            minimize_required_info(queue_item, self.validator.validate_all(self.schema))
             self.log.update(queue_item.target_fields)
-            
+
         if not all_target_info:
+            self.log.update("No target info needed, returning...")
             return
         
         raw_html = self.scrape(url)
@@ -142,6 +145,7 @@ class Main:
         self.add_to_queue(queue_item, all_target_info, raw_soup)
 
         while True:
+            self.log.update(self.queue.peek())
             next_queue_item = self.queue.get()
             if not next_queue_item:
                 break

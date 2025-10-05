@@ -9,7 +9,8 @@ class PromptChainPromptBuilder:
     The builder object for the `ChatPromptTemplate` object to be passed into a chat
     and invoked\n
     The builder automatically makes the system instructions and query based on the
-    current state of the schema or the required information passed into it
+    current state of the schema or the required information passed into it to be
+    used by a `PromptChainExecutor`
 
     Args:
         schema (dict | BaseSchemaSection): The schema which will be used to get all target
@@ -17,7 +18,7 @@ class PromptChainPromptBuilder:
         all_target_info (list[str | Fields]): The information for the model to find
         which will be included in the query
     """
-    def __init__(self, schema: dict | BaseSchemaSection):
+    def __init__(self, schema: dict|BaseSchemaSection):
 
         self.schema = schema
 

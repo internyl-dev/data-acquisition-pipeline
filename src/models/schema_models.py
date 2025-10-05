@@ -8,7 +8,7 @@ from .schema_fields import Fields
 # Type aliases
 OptionalBool = bool | Literal["not provided"]
 OptionalInt = int | Literal["not provided"]
-OptionalFloat = float | Literal["not provided"]
+OptionalFloat = float | Literal["not provided"] | None
 
 class BaseModelConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)

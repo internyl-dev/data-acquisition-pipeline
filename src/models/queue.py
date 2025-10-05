@@ -50,7 +50,7 @@ class Queue:
     def peek(self, strat:QueueStrategy=None) -> QueueItem:
         "Returns an item from the queue without deletion"
         strat = strat or self.default_strat
-        strat_obj = strat()
+        strat_obj = strat(self.items)
         item = strat_obj.peek()
         return item
 

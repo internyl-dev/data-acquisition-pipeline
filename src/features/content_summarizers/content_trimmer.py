@@ -117,6 +117,8 @@ class ContentTrimmer:
             
         # Or simply truncate for keywords associated with the required info
         else:
+            if isinstance(required_info, Fields):
+                required_info = required_info.value
             all_keywords = self.content_keywords[required_info]
 
         return self._truncont(contents, all_keywords, area)
