@@ -82,6 +82,10 @@ class Queue:
             index = self.items.index(q_item)
             self.items[index] = item
 
+    def get_length(self) -> int:
+        "Returns the amount of items in the queue"
+        return len(self.items)
+
 if __name__ == "__main__":
 
     item1 = QueueItem(url="first", target_fields=["item"])

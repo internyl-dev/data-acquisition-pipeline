@@ -11,13 +11,13 @@ from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
 from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
 from .features.ai_processors.prompt_chain import PromptChainExecutor
-from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter, minimize_required_info
+from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter
 from .features.logger import Logger
 
-from .utils import Guards
+from .utils import minimize_required_info
 
 @dataclass
-class Main(Guards):
+class Main:
     log_mode: bool=True
     headless: bool=True
 
@@ -39,8 +39,6 @@ class Main(Guards):
     url_filter=None
 
     def __post_init__(self):
-        
-        Guards.__init__(self)
 
         self.history = self.history or History()
         self.queue = self.queue or Queue()
@@ -117,9 +115,17 @@ class Main(Guards):
         
         self.history.add(url)
 
-        if not self.validator.validate_all:
-            return
         if depth <= 0:
+            return
+        
+        if self.queue.get_length() > 3:
+            self.log.update("Excessively large queue length detected. " \
+                            "Attempting to minimize target info...")
+            self.log.update(queue_item.target_fields)
+            minimize_required_info(queue_item, self.validator.validate(self.schema))
+            self.log.update(queue_item.target_fields)
+            
+        if not all_target_info:
             return
         
         raw_html = self.scrape(url)

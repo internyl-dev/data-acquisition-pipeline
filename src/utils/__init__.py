@@ -1,2 +1,2 @@
 
-from .guards import Guards
+from .minimize_required_info import minimize_required_info
