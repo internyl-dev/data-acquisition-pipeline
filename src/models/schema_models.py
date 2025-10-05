@@ -74,7 +74,7 @@ class Dates(BaseSchemaSection):
 # LOCATIONS #
 #===========#
 class Location(BaseSchemaSection):
-    virtual: OptionalBool = "not provided"
+    virtual: OptionalBool | Literal["both available"] = "not provided"
     state: str = "not provided"
     city: str = "not provided"
     address: str = "not provided"
