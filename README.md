@@ -1,6 +1,6 @@
-# Internyl API Backend
+# Internyl Data Acquisition via AI Wrapper
 
-This is the repository for the backend system for the Internyl website. This backend system is responsible for finding the info used by the cards on the internship search page.
+This is the repository for the data acquisition pipeline for the Internyl website. This system is responsible for finding the info displayed on the cards of the internship search page.
 
 Internyl Website Repo: https://github.com/internyl-dev/internyl-frontend
 <br>
@@ -46,11 +46,23 @@ python run.py
 
 ## How it Works
 
-The entire process is a recursive loop where we take the HTML contents of a webpage, send the HTML to an AI model to extract our target internship information, and find other links from within the webpage that may include any possible missing information. The process recurses from one of the links found in the aforementioned last step.
+The entire process is a recursive loop where we take the HTML contents of a webpage, send the HTML to an AI model to extract the target internship information, and find other links from within the webpage that may include any possible missing information. The process then repeats using one of the new links found, adding more data onto the data previously found.
 
 ### Web Scraping 
 
-Given the URL to the homepage of an internship website, we use Playwright to visit the website. Playwright then scrapes the inner body element so as to ignore unneeded script tags. 
+Given the URL to the homepage of an internship website, we use Playwright to visit the website. Playwright then scrapes the webpage contents. We specifically scrape from the inner body element so as to ignore unneeded script tags.
+
+#### Features
+- `scrape_url(url:str) -> str` : The main scraping method. Using Playwright, visit the url and scrape the HTML contents. Returns a string of the HTML contents of the inner body tag.
+- `scrape_favicon(url:str) -> str` : Visit a url and scrape the favicon and return the link as a string.
+
+#### Issues + Future Fixes
+- **Problem:** The scraper can not yet handle images which is an issue because images can sometimes contain vital information about a program.
+- **Solution:** Using Playwright, get the data from the image and have some service extract the text from the image.<br><br>
+- **Problem:** The sraper can not yet scrape PDF files. PDF files, though rare, often contain information about programs and are used by some organizations.
+- **Solution:** Not top priority, we will revisit and think of a solution soon.<br><br>
+- **Problem:** The scraper can not extract data from videos. This issue isn't huge but exists because there are a small amount websites that use videos to communicate vital information.
+- **Solution:** No cost effective solution thought of yet. Also not top priority.
 
 ### HTML Parsing
 
