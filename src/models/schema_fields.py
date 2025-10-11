@@ -15,3 +15,5 @@ if __name__ == "__main__":
     field = Fields.OVERVIEW
 
     print(field)
+
+    print(isinstance(Fields.CONTACT, Fields))

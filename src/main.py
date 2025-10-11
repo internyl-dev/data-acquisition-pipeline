@@ -14,7 +14,7 @@ from .features.ai_processors.prompt_chain import PromptChainExecutor
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter
 from .features.logger import Logger
 
-from .utils import minimize_required_info
+from .utils import minimize_required_info, AIQueueFilter
 
 @dataclass
 class Main:
@@ -24,6 +24,8 @@ class Main:
     history=None
     queue=None
     schema=None
+
+    log=None
 
     scraper=None
     declutterer=None
@@ -37,12 +39,17 @@ class Main:
     url_processor=None
     url_ranker=None
     url_filter=None
+    ai_queue_filter=None
 
     def __post_init__(self):
 
         self.history = self.history or History()
         self.queue = self.queue or Queue()
         self.schema = self.schema or RootSchema()
+
+        self.log = self.log or Logger(log_mode=self.log_mode)
+        self.log.create_logging_files()
+        self.log.apply_conditional_logging()
 
         self.scraper            = self.scraper            or PlaywrightClient()
         self.declutterer        = self.declutterer        or HTMLDeclutterer()
@@ -56,10 +63,7 @@ class Main:
         self.url_processor      = self.url_processor      or URLProcessor()
         self.url_ranker         = self.url_ranker         or URLRanker()
         self.url_filter         = self.url_filter         or URLFilter()
-
-        self.log = Logger(log_mode=self.log_mode)
-        self.log.create_logging_files()
-        self.log.apply_conditional_logging()
+        self.ai_queue_filter    = self.ai_queue_filter    or AIQueueFilter(self.log)
 
     def scrape(self, url):
         self.log.update("TRIMMER: Scraping...")
@@ -143,6 +147,14 @@ class Main:
         all_target_info = self.validator.validate_all(self.schema)
         self.log.update(f"VALIDATOR: STILL NEED THE FOLLOWING INFO: {all_target_info}")
         self.add_to_queue(queue_item, all_target_info, raw_soup)
+
+        if self.queue.get_length() > 5:
+            self.log.update("EXCESSIVE QUEUE LENGTH DETECTED: PROMPTING AI QUEUE FILTER")
+            new_queue_model = self.ai_queue_filter.add_queue(self.queue).invoke()
+            new_queue = new_queue_model.new_queue
+            self.log.update(new_queue)
+            self.queue.keep_urls(new_queue)
+            self.log.update(self.queue.items)
 
         while True:
             self.log.update(self.queue.peek())

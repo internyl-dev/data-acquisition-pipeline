@@ -95,30 +95,30 @@ class ContentTrimmer:
         Returns:
             value (str): Truncated contents of the webpage
         """
+        if isinstance(required_info, Fields):
+            required_info = required_info.value
 
         # If the length of the contents is less than the word limit:
         # L> Return the full contents because the model can handle the relatively smaller word count
         # If the required info is overview:
         # L> Return the full contents if the required info is 'overview so that the model can make a general description
-        if len(contents.split()) < word_limit or required_info == 'overview' or required_info == Fields.OVERVIEW:
+        if len(contents.split()) < word_limit or required_info == 'overview':
             return contents
 
         # Truncate for dates as well as keywords if required info is 'dates'
-        if required_info == 'dates' or required_info == Fields.DATES:
+        if required_info == 'dates':
             all_keywords = (self.content_keywords[required_info])
         
         # Truncate for emails and phone numbers as well as keywords if required info is 'contact'
-        elif required_info == 'contact' or required_info == Fields.CONTACT:
+        elif required_info == 'contact':
             all_keywords = (self.content_keywords[required_info])
             
         # Don't truncate contents if we're performing a bulk extraction
-        elif required_info == 'all' or required_info == Fields.ALL:
+        elif required_info == 'all':
             return contents
             
         # Or simply truncate for keywords associated with the required info
         else:
-            if isinstance(required_info, Fields):
-                required_info = required_info.value
             all_keywords = self.content_keywords[required_info]
 
         return self._truncont(contents, all_keywords, area)

@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from dataclasses import dataclass
 from .queue_strategies import QueueStrategy, FIFO, FILO
 from .schema_fields import Fields
+from typing import List
 
 @dataclass
 class QueueItem:
@@ -85,6 +86,19 @@ class Queue:
     def get_length(self) -> int:
         "Returns the amount of items in the queue"
         return len(self.items)
+    
+    def get_all_urls(self) -> List[str]:
+        "Get all the URLs from each item as a list of strings"
+        all_urls = []
+        for item in self.items:
+            all_urls.append(item.url)
+        return all_urls
+    
+    def keep_urls(self, urls:list) -> None:
+        "Delete all queue items that do not have a link in the given list of urls"
+        for item in self.items:
+            if item.url not in urls:
+                self.items.remove(item)
 
 if __name__ == "__main__":
 
@@ -107,3 +121,12 @@ if __name__ == "__main__":
 
     queue.replace(item3)
     print(queue.items)
+
+    item4 = QueueItem(url="third", target_fields="yeah")
+    item5 = QueueItem(url="fourth", target_fields="yerr")
+    queue.add(item4)
+    queue.add(item5)
+
+    print(queue.get_all_urls())
+    queue.keep_urls(["third", "fourth"])
+    print(queue.get_all_urls())
