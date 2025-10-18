@@ -80,6 +80,7 @@ class Main:
 
         for target_info in all_target_info:
             filtered_urls = self.url_filter.filter(new_urls, target_info)
+            self.log.update(f"Filtering for {target_info}:", filtered_urls)
             for filtered_url in filtered_urls.values():
                 filtered_url = self.url_processor.process_url(queue_item.url, filtered_url)
                 new_queue_item = QueueItem(filtered_url, target_fields=[target_info])
@@ -90,7 +91,7 @@ class Main:
 
                 # If link is in queue, add info if it was not already there
                 elif self.queue.is_in(new_queue_item):
-                    q_item = self.queue.find(queue_item)
+                    q_item = self.queue.find(new_queue_item)
                     if q_item and target_info not in q_item.target_fields:
                         q_item.target_fields.append(target_info)
                         self.queue.replace(q_item)

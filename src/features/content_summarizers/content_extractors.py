@@ -66,3 +66,49 @@ class DateExtractor(ContentExtractor):
         """, re.VERBOSE | re.I)
 
         return re.findall(date_pattern, s)
+    
+class MoneyExtractor(ContentExtractor):
+    def extract(self, s:str):
+        """
+        Finds and returns all monetary amounts found in a string
+
+        Args:
+            s (str): The text to search monetary amounts from
+        
+        Returns:
+            value (list): A list of all monetary amounts found within the text
+        """
+        money_pattern = re.compile(r"""
+        (                           # Start capturing group (moved to capture symbol too)
+            (?:                     # Non-capturing group for currency symbol prefix
+                (?:USD|EUR|GBP|CAD|AUD|JPY|CNY|INR)  # Currency codes
+                \s*                 # Optional whitespace
+            )?
+            (?:                     # Currency symbols
+                [\$£€¥₹]            # Common currency symbols
+            )?
+            \s*                     # Optional whitespace
+            \b                      # Word boundary
+            (?:
+                \d{1,3}(?:,\d{3})+(?:\.\d{2})?  # Numbers with commas: 1,000 or 1,000.00
+                |                   # OR
+                \d+(?:\.\d{2})?     # Numbers without commas: 100 or 100.00
+            )
+            \b                      # Word boundary
+            \s*                     # Optional whitespace
+            (?:                     # Non-capturing group for currency suffix
+                (?:USD|EUR|GBP|CAD|AUD|JPY|CNY|INR|dollars?|euros?|pounds?|yen)
+            )?
+        )                           # End capturing group
+        """, re.VERBOSE | re.I)
+
+        return re.findall(money_pattern, s)
+    
+if __name__ == "__main__":
+    test_text = """Ladder Internships is a world-class internship program for ambitious students. In the program, students work with top start-ups and NGOs to develop real-world projects. The Startup internship program runs 8 weeks, costs $2990, and involves weekly meetings with a supervisor from the start-up. The CEO internship program: costs $4990 and involves working directly with a start-up CEO from a FAANG background (Facebook, Google, etc.). This is our program for our most ambitious interns. The Combination program: Offers our flagship CEO internship program in combination with a mentored research program. The joint program is $7400. There is full financial aid for students with need. The program is selective. The admission deadline for the Winter cohort (starting December 8th) is November 16th."""
+    
+    extractor = MoneyExtractor()
+    results = extractor.extract(test_text)
+    
+    print("Money amounts found:")
+    print(results)

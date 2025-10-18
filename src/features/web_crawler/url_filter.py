@@ -28,4 +28,13 @@ class URLFilter:
                     filtered_links[href] = urls[href]
         
         return filtered_links
-        
+
+if __name__ == "__main__":
+    urls = {
+        "https://example.com/apply": "Apply Now",
+        "https://example.com/fees": "Tuition and Fees",
+        "https://example.com/about": "About Us",
+        "https://example.com/contact": "Contact Information"
+    }
+    url_filter = URLFilter()
+    print(url_filter.filter(urls, "costs"))

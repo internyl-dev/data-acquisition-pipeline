@@ -132,7 +132,7 @@ class TestHTMLCleaners(unittest.TestCase):
              ["Test", "area", "keyword", "two", "works"]],
 
             [["ignored", "Multiple", "keyword", "keyword", "works", "ignored"], 1,
-             ["Mutliple", "keyword", "keyword", "works"]],
+             ["Multiple", "keyword", "keyword", "works"]],
         ]
 
         for case in cases:

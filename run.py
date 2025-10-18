@@ -7,7 +7,7 @@ from src.features.databases import FirebaseClient
 Instance = Main(log_mode=True)
 
 # Input link to extract info from
-Instance.run('https://www.amnh.org/learn-teach/teens/saltz-internship-program')
+Instance.run('https://www.ladderinternships.com/')
 pp(Instance.schema.model_dump())
 
 # Call the function to add it to the 'products' collection

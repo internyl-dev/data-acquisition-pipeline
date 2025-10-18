@@ -67,7 +67,7 @@ class PromptChainExecutor:
             try:
                 parsed_schema = parser.parse(response.content)
                 self.log.update("PROMPT EXECUTOR: Successfully parsed to schema object")
-                self.log.update(parsed_schema)
+                #self.log.update(parsed_schema)
             
             except Exception as e:
                 self.log.update(f"PROMPT EXECUTOR: Parsing error: {e}")

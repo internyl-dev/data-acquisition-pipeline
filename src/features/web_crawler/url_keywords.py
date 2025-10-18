@@ -24,10 +24,10 @@ LINK_KEYWORDS = {
     ],
 
     'costs': [
-        'cost', 'tuition', 'fee', 'expenses', 'financial', 'price', 'payment',
+        'cost', 'tuition', 'fee', 'expense', 'financial', 'price', 'payment',
         'scholarship', 'funding', 'free', 'stipend',
         'affordability', 'support', 'aid', 'grant',
-        'faq', 'frequently asked questions', 'frequently-asked-questions'
+        'faq', 'frequently asked questions', 'frequently-asked-questions', 'apply'
     ],
 
     'contact': [

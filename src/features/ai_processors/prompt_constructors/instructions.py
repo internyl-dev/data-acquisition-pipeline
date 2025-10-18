@@ -1,4 +1,3 @@
-
 INSTRUCTIONS = {
     "overview": """
 You are given a partially filled JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. Your task is to update only the 'overview' section using information from the text after WEBPAGE CONTENTS START HERE.
@@ -10,6 +9,18 @@ Core rules:
 - Only update fields you can confirm directly from the content.
 - Leave all other fields exactly as they are: "not provided" or [].
 - Do NOT change the structure of the given schema.
+- CRITICAL: Return ONLY the overview object WITHOUT wrapping it in an "overview" key.
+
+Expected output format:
+{
+  "title": "...",
+  "provider": "...",
+  "description": "...",
+  "link": "not provided",
+  "favicon": "not provided",
+  "subject": [...],
+  "tags": [...]
+}
 
 Fill:
 - "title": Full program name if explicitly given.
@@ -35,6 +46,24 @@ Core rules:
 - Never infer grade level from age or the reverse.
 - Leave all untouched fields as "not provided" or [].
 - Do NOT change the structure of the given schema.
+- CRITICAL: Return ONLY the eligibility object WITHOUT wrapping it in an "eligibility" key.
+
+Expected output format:
+{
+  "requirements": {
+    "essay_required": ...,
+    "recommendation_required": ...,
+    "transcript_required": ...,
+    "other": [...]
+  },
+  "eligibility": {
+    "grades": [...],
+    "age": {
+      "minimum": "...",
+      "maximum": "..."
+    }
+  }
+}
 
 Fill:
 - "essay_required", "recommendation_required", "transcript_required": Use true, false, or "not provided".
@@ -57,6 +86,29 @@ Core rules:
 - Always use mm-dd-yyyy for dates.
 - Leave unchanged fields as "not provided".
 - Do NOT change the structure of the given schema.
+- CRITICAL: Return ONLY the dates object WITHOUT wrapping it in a "dates" key.
+
+Expected output format:
+{
+  "deadlines": [
+    {
+      "name": "...",
+      "priority": "...",
+      "term": "...",
+      "date": "...",
+      "rolling_basis": ...,
+      "time": "..."
+    }
+  ],
+  "dates": [
+    {
+      "term": "...",
+      "start": "...",
+      "end": "..."
+    }
+  ],
+  "duration_weeks": ...
+}
 
 Update deadlines:
 - Add each deadline as a separate object.
@@ -87,6 +139,19 @@ Core rules:
 - Infer locations based on well known campuses carefully with the context.
 - Leave untouched fields as "not provided".
 - Do NOT change the structure of the given schema.
+- CRITICAL: Return ONLY the locations object WITHOUT wrapping it in a "locations" key.
+
+Expected output format:
+{
+  "locations": [
+    {
+      "virtual": ...,
+      "state": "...",
+      "city": "...",
+      "address": "..."
+    }
+  ]
+}
 
 Fill:
 - "virtual": true if clearly online, false if clearly in-person, "hybrid" if both, "both available" if both are available, "not provided" if unclear.
@@ -106,11 +171,29 @@ Core rules:
 - Use only direct mentions — do not assume or calculate.
 - Leave all other values as "not provided" or null.
 - Do NOT change the structure of the given schema.
+- CRITICAL: Return ONLY the costs object WITHOUT wrapping it in a "costs" key.
+
+Expected output format:
+{
+  "costs": [
+    {
+      "name": "...",
+      "free": ...,
+      "lowest": ...,
+      "highest": ...,
+      "financial_aid_available": ...
+    }
+  ],
+  "stipend": {
+    "available": ...,
+    "amount": ...
+  }
+}
 
 Cost objects (tuition, fees, etc.):
 - "free": Set to true only if explicitly stated. If true, set "lowest" and "highest" to null.
 - "lowest"/"highest": Use numbers only if directly stated; if not stated and not free, leave as "not provided".
-- "financial-aid-available": Use true, false, or "not provided".
+- "financial_aid_available": Use true, false, or "not provided".
 
 Stipend:
 - "available": true only if explicitly mentioned, false if clearly absent.
@@ -133,6 +216,15 @@ Core rules:
 - Do not infer or assume from context or page layout.
 - Leave fields as "not provided" if missing.
 - Only include the most important contact to an applicant.
+- CRITICAL: Return ONLY the contact object WITHOUT wrapping it in a "contact" key.
+
+Expected output format:
+{
+  "contact": {
+    "email": "...",
+    "phone": "..."
+  }
+}
 
 Fill:
 - "email": Must be a complete and valid address (e.g., contact@school.edu).
@@ -193,7 +285,7 @@ Never infer age from grade or vice versa.
   - If the year isn't provided, it is safe to assume that it refers to the current year
 - "duration_weeks": Use a number only if clearly stated (e.g., "6-week program" → 6); otherwise "not provided".
 
-Never derive exact duration from vague phrases like “a few weeks”.
+Never derive exact duration from vague phrases like "a few weeks".
 
 4. LOCATIONS:
 - "virtual": Use:
@@ -207,11 +299,11 @@ Never derive exact duration from vague phrases like “a few weeks”.
 Do not infer the location based on provider, university, or assumptions.
 
 5. COSTS:
-Each cost-related item gets its own object:
+Each cost-related item gets its own object (never leave the costs list empty, if it explicitly says there are no costs, just put "free" as true without removing the object from the list):
 - "name": Label of the cost (e.g., Tuition, Housing).
 - "free": true only if clearly stated. If true, both "lowest" and "highest" must be null.
 - "lowest" / "highest": Use only numeric values if explicitly stated (e.g., $2500). Else use "not provided".
-- "financial-aid-available": true, false, or "not provided".
+- "financial_aid_available": true, false, or "not provided".
 
 Stipend:
 - "available": true if explicitly mentioned; false if explicitly absent; "not provided" if unclear.
@@ -233,10 +325,10 @@ Return only the updated JSON. Never explain your reasoning. Preserve the schema 
 
 THIS IS AN EXAMPLE INPUT AND OUTPUT
 INPUT:
-Summer High School Internships\nThe Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school (in grades 10 and 11) or obtaining their High School Equivalency degree and who, on the application deadline date, either reside in or attend a high school or home school in New York, New Jersey, or Connecticut. This program allows students to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.\nThis internship experience is not limited to young people who have a passion for art! The High School Internship Program allows you to connect one-on-one and in small cohorts with Museum professionals in a number of related fields, including editorial, marketing, social media, education, scientific research, conservation, and more. During your time at The Met, you have the chance to find the intersection of your interests as you gain insights from peers and professionals.\nWe are committed to addressing diversity in arts, museums, and creative careers. We are seeking interns with diverse backgrounds and interests who are excited about sharing their skills and ideas. Students who are members of groups that are historically underrepresented in these fields are strongly encouraged to apply.\nWe are committed to considering all qualified individuals and ensuring that everyone can participate in this application process. If you need additional accommodations or an alternative format to successfully submit your application, please contact highschoolinterns@metmuseum.org.\nUpon completion of the program, High School Interns receive a stipend commensurate with New York State minimum wage law.\nSee our visitor guidelines.\nSummer 2025\nApplication available: Monday, February 3, 2025\nApplication deadline: Friday, March 7, 2025, 6 pm ET (interview notification: by Friday, April 18, 2025)\nProgram dates:\nAccepted intern and family reception, Saturday, June 21, 2025, 1–3 pm: A two-hour session for interns and at least one parent or guardian to become familiar with the program and its staff and review requirements and expectations.\nBootcamp, Wednesday, July 2, 2025, 9 am–5 pm: Eight-hour training and workshop to prepare interns for the internship.\nDepartmental placement: No less than forty hours (10 to 20 hours per week) observing, assisting, and being mentored by a staff member in one of the Museum's departments. The placement is determined by the intern's interests and the department’s internship project. The majority of departmental placement hours take place from Monday, July 7 through Friday, August 8, 2025, 9 am–1 pm and 1–6 pm. Learn more about departmental placements.\nTeen Fridays: Friday, July 18, and Friday, August 1, 2025, 4:30–6:30 pm\nCareer Labs, Thursday, July 17, and Thursday, July 31, 2025, 1:30–3:30 pm: Two two-hour sessions with curators, educators, designers, conservators, and other staff who discuss their professional paths and roles at the Museum and lead workshops during which interns try out an element of their work.\nBiweekly check-ins: One-hour biweekly sessions for interns to meet as a cohort, learn from each other's experiences, meet with mentors, and develop their career readiness skills.\nFinal event and celebration: Friday, August 8, 2025, 5:30–7:30 pm: Interns develop an event to share the insights, experiences, and skills gained through their departmental placements with fellow interns and invited guests.\nHow to Apply\nApply now\nApplication deadline: Friday, March 7, 2025, 6 pm ET\nInterview notification by Friday, April 18, 2025\nThe application requires:\nA completed application form\nShort essay responses\nOne letter of recommendation from a teacher, school administrator, or another adult who is not related to you who can write about why you would be a great intern for The Met. Good choices might be your coach or mentor, the leader of an after-school program or activity you participate in, or a supervisor from a previous internship or work experience.\nInterviews\nInterviews are required for finalists only. If you are selected as a finalist, we will contact you using the email you used to submit your application. It is your responsibility to ensure that your email address is accurate.\nYou will be asked to indicate which time and day you are available for an in-person interview. We will send a confirmation email with your interview date and additional information.\nPlease be sure to check your spam folders for communications from The Met.\nApply now\nPlease note: Your recommendation letters must be submitted by the application deadline. We will not accept any applications, application materials, or recommendations after the deadline.\nPlease refer to our Frequently Asked Questions for additional information.\nWant to stay connected and learn more about upcoming programs and events? Follow @metteens on Facebook, Instagram, and X, formerly known as Twitter.
+Summer High School Internships\nThe Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school (in grades 10 and 11) or obtaining their High School Equivalency degree and who, on the application deadline date, either reside in or attend a high school or home school in New York, New Jersey, or Connecticut. This program allows students to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.\nThis internship experience is not limited to young people who have a passion for art! The High School Internship Program allows you to connect one-on-one and in small cohorts with Museum professionals in a number of related fields, including editorial, marketing, social media, education, scientific research, conservation, and more. During your time at The Met, you have the chance to find the intersection of your interests as you gain insights from peers and professionals.\nWe are committed to addressing diversity in arts, museums, and creative careers. We are seeking interns with diverse backgrounds and interests who are excited about sharing their skills and ideas. Students who are members of groups that are historically underrepresented in these fields are strongly encouraged to apply.\nWe are committed to considering all qualified individuals and ensuring that everyone can participate in this application process. If you need additional accommodations or an alternative format to successfully submit your application, please contact highschoolinterns@metmuseum.org.\nUpon completion of the program, High School Interns receive a stipend commensurate with New York State minimum wage law.\nSee our visitor guidelines.\nSummer 2025\nApplication available: Monday, February 3, 2025\nApplication deadline: Friday, March 7, 2025, 6 pm ET (interview notification: by Friday, April 18, 2025)\nProgram dates:\nAccepted intern and family reception, Saturday, June 21, 2025, 1–3 pm: A two-hour session for interns and at least one parent or guardian to become familiar with the program and its staff and review requirements and expectations.\nBootcamp, Wednesday, July 2, 2025, 9 am–5 pm: Eight-hour training and workshop to prepare interns for the internship.\nDepartmental placement: No less than forty hours (10 to 20 hours per week) observing, assisting, and being mentored by a staff member in one of the Museum's departments. The placement is determined by the intern's interests and the department's internship project. The majority of departmental placement hours take place from Monday, July 7 through Friday, August 8, 2025, 9 am–1 pm and 1–6 pm. Learn more about departmental placements.\nTeen Fridays: Friday, July 18, and Friday, August 1, 2025, 4:30–6:30 pm\nCareer Labs, Thursday, July 17, and Thursday, July 31, 2025, 1:30–3:30 pm: Two two-hour sessions with curators, educators, designers, conservators, and other staff who discuss their professional paths and roles at the Museum and lead workshops during which interns try out an element of their work.\nBiweekly check-ins: One-hour biweekly sessions for interns to meet as a cohort, learn from each other's experiences, meet with mentors, and develop their career readiness skills.\nFinal event and celebration: Friday, August 8, 2025, 5:30–7:30 pm: Interns develop an event to share the insights, experiences, and skills gained through their departmental placements with fellow interns and invited guests.\nHow to Apply\nApply now\nApplication deadline: Friday, March 7, 2025, 6 pm ET\nInterview notification by Friday, April 18, 2025\nThe application requires:\nA completed application form\nShort essay responses\nOne letter of recommendation from a teacher, school administrator, or another adult who is not related to you who can write about why you would be a great intern for The Met. Good choices might be your coach or mentor, the leader of an after-school program or activity you participate in, or a supervisor from a previous internship or work experience.\nInterviews\nInterviews are required for finalists only. If you are selected as a finalist, we will contact you using the email you used to submit your application. It is your responsibility to ensure that your email address is accurate.\nYou will be asked to indicate which time and day you are available for an in-person interview. We will send a confirmation email with your interview date and additional information.\nPlease be sure to check your spam folders for communications from The Met.\nApply now\nPlease note: Your recommendation letters must be submitted by the application deadline. We will not accept any applications, application materials, or recommendations after the deadline.\nPlease refer to our Frequently Asked Questions for additional information.\nWant to stay connected and learn more about upcoming programs and events? Follow @metteens on Facebook, Instagram, and X, formerly known as Twitter.
 
 EXPECTED OUTPUT:
-{"overview":{"title":"High School Internship Program","provider":"The Met","description":"The Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.","link":"not provided","subject":[],"tags":["paid"]},"eligibility":{"essay_required":true,"recommendation_required":true,"transcript_required":"not provided","other":["Must be in grades 10 or 11 or obtaining their High School Equivalency degree","Must reside in or attend a high school or home school in New York, New Jersey, or Connecticut on the application deadline date","Interviews are required for finalists only"],"grades":["Sophomore","Junior"],"age":{"minimum":"not provided","maximum":"not provided"}},"dates":{"deadlines":[{"name":"Application Deadline","priority":"high","term":"Summer 2025","date":"03-07-2025","rolling_basis":false,"time":"6:00 PM"},{"name":"Interview Notification","priority":"medium","term":"Summer 2025","date":"04-18-2025","rolling_basis":false,"time":"not provided"}],"dates":[{"term":"Summer 2025","start":"07-07-2025","end":"08-08-2025"}],"duration_weeks":"not provided"},"locations":{"virtual":false,"state":"not provided","city":"not provided","address":"not provided"},"costs":{"costs":[],"stipend":{"available":true,"amount":null}},"contact":{"email":"highschoolinterns@metmuseum.org","phone":"not provided"}}
+{"overview":{"title":"High School Internship Program","provider":"The Met","description":"The Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.","link":"not provided","subject":[],"tags":["paid"]},"eligibility":{"requirements":{"essay_required":true,"recommendation_required":true,"transcript_required":"not provided","other":["Must be in grades 10 or 11 or obtaining their High School Equivalency degree","Must reside in or attend a high school or home school in New York, New Jersey, or Connecticut on the application deadline date","Interviews are required for finalists only"]},"eligibility":{"grades":["Sophomore","Junior"],"age":{"minimum":"not provided","maximum":"not provided"}}},"dates":{"deadlines":[{"name":"Application Deadline","priority":"high","term":"Summer 2025","date":"03-07-2025","rolling_basis":false,"time":"6:00 PM"},{"name":"Interview Notification","priority":"medium","term":"Summer 2025","date":"04-18-2025","rolling_basis":false,"time":"not provided"}],"dates":[{"term":"Summer 2025","start":"07-07-2025","end":"08-08-2025"}],"duration_weeks":"not provided"},"locations":{"locations":[{"virtual":false,"state":"not provided","city":"not provided","address":"not provided"}]},"costs":{"costs":[],"stipend":{"available":true,"amount":null}},"contact":{"contact":{"email":"highschoolinterns@metmuseum.org","phone":"not provided"}}}
 """,
 
     "evaluate_links": """
