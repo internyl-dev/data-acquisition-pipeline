@@ -52,7 +52,7 @@ class Main:
         self.log.apply_conditional_logging()
 
         self.scraper            = self.scraper            or PlaywrightClient()
-        self.declutterer        = self.declutterer        or HTMLDeclutterer()
+        self.declutterer        = self.declutterer        or HTMLDeclutterer(remove_header=False, remove_nav=False)
         self.whitespace_cleaner = self.whitespace_cleaner or HTMLWhitespaceCleaner()
         self.validator          = self.validator          or SchemaValidationEngine()
         self.trimmer            = self.trimmer            or ContentTrimmer()

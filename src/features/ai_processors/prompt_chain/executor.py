@@ -54,6 +54,7 @@ class PromptChainExecutor:
                 target_info = "all"
             
             trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
+            self.log.update(trimmed_contents)
 
             prompt = self._build_prompt(target_info, trimmed_contents)
             #self.log.update(prompt.partial_variables)

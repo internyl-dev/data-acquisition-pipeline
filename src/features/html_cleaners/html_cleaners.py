@@ -1,27 +1,68 @@
 
 import re
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
 
 from .base_html_cleaner import HTMLCleaner
 
+@dataclass
 class HTMLDeclutterer(HTMLCleaner):
+    remove_header:bool=True,
+    remove_nav:bool=True,
+    remove_footer:bool=True
+    remove_select:bool=True
+    remove_textarea:bool=True
+    remove_button:bool=True
+    remove_option:bool=True
+
+    def _remove_element(self, element:str, soup:BeautifulSoup):
+        elements = soup.find(element)
+        
+        if not elements:
+            return soup
+        
+        for elm in elements:
+            elm.decompose()
+        
+        return soup
+    
+    def _remove_header(self, soup:BeautifulSoup):
+        return self._remove_element('header', soup)
+
+    def _remove_nav(self, soup:BeautifulSoup):
+        return self._remove_element('nav', soup)
+
+    def _remove_footer(self, soup:BeautifulSoup):
+        return self._remove_element('footer', soup)
+
     def _remove_navigation(self, soup:BeautifulSoup):
         # headers, navs, and footers typically contain links to other parts of the website
         # L> Excessively clutter context, especially when truncating for keywords
-        for element in ['header', 'nav', 'footer']:
-            elements = soup.find_all(element)  
-            for elm in elements:
-                elm.decompose()
+        soup = self._remove_header(soup) if self.remove_header else soup
+        soup = self._remove_nav(soup) if self.remove_nav else soup
+        soup = self._remove_footer(soup) if self.remove_footer else soup
 
         return soup
+    
+    def _remove_select(self, soup:BeautifulSoup):
+        return self._remove_element('select', soup)
+    
+    def _remove_textarea(self, soup:BeautifulSoup):
+        return self._remove_element('textarea', soup)
+    
+    def _remove_button(self, soup:BeautifulSoup):
+        return self._remove_element('button', soup)
+    
+    def _remove_option(self, soup:BeautifulSoup):
+        return self._remove_element('option', soup)
 
     def _remove_forms(self, soup:BeautifulSoup):
         # These are all common form elements that can have text
         # Often contain tens of options that just clutter context
-        for element in ['select', 'textarea', 'button', 'option']:
-            elements = soup.find_all(element)
-            for elm in elements:
-                elm.decompose()
+        soup = self._remove_select(soup) if self.remove_select else soup
+        soup = self._remove_textarea(soup) if self.remove_textarea else soup
+        soup = self._remove_button(soup) if self.remove_button else soup
+        soup = self._remove_option(soup) if self.remove_option else soup
 
         return soup
 
