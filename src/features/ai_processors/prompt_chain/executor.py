@@ -81,15 +81,15 @@ class PromptChainExecutor:
                 break
             else:
                 if target_info == Fields.OVERVIEW:
-                    self.overview = parsed_schema
+                    self.schema.overview = parsed_schema
                 if target_info == Fields.ELIGIBILITY:
-                    self.eligibility = parsed_schema
+                    self.schema.eligibility = parsed_schema
                 if target_info == Fields.DATES:
-                    self.dates = parsed_schema
+                    self.schema.dates = parsed_schema
                 if target_info == Fields.COSTS:
-                    self.costs = parsed_schema
+                    self.schema.costs = parsed_schema
                 if target_info == Fields.CONTACT:
-                    self.contact = parsed_schema
+                    self.schema.contact = parsed_schema
         return self.schema
     
     

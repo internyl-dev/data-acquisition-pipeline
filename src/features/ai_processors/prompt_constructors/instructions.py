@@ -202,6 +202,7 @@ Stipend:
   - If the amount for the entire program can be calculated explicitly given the rate and amount of sessions, calculate that and return it (eg. 100 per session, 7 sessions -> 700)
 
 Include each cost type as a separate object if multiple are mentioned.
+Also keep in mind that some websites offer a variety of internships as one single internship. If multiple internships are found, assume that this is the case and have the lowest cost be the price of the internship with the lowest cost and the highest cost be the price of the internship with the highest cost.
 """,
 
 
