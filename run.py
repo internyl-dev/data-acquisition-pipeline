@@ -7,9 +7,9 @@ from src.features.databases import FirebaseClient
 Instance = Main(log_mode=True)
 
 # Input link to extract info from
-Instance.run('https://www.ladderinternships.com/')
+Instance.run('https://saldef.org/regionalintern/')
 pp(Instance.schema.model_dump())
 
 # Call the function to add it to the 'products' collection
-db = FirebaseClient()
+db = FirebaseClient.get_instance()
 db.save("programs-display", Instance.schema.model_dump(), set_index=True)

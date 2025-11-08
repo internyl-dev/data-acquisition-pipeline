@@ -5,13 +5,19 @@ import dotenv
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from typing import Self
 
 from src.models import BaseSchemaSection
 
 dotenv.load_dotenv()
 
 class FirebaseClient:
+    __shared_instance = None
+
     def __init__(self):
+
+        if FirebaseClient.__shared_instance:
+            raise Exception("Shared instance already exists")
 
         # Replace with the actual path
         cred = credentials.Certificate(os.environ.get("FIREBASE_SDK_PATH"))
@@ -20,7 +26,15 @@ class FirebaseClient:
         # Get a Firestore client
         self.database = firestore.client()
 
+        FirebaseClient.__shared_instance = self
+
         #self.logger.debug("Firebase Admin SDK initialized and Firestore client ready!")
+
+    @classmethod
+    def get_instance(cls) -> Self:
+        if not cls.__shared_instance:
+            cls()
+        return cls.__shared_instance
         
     def _get_name_index(self, collection_path:str, document:dict|BaseSchemaSection):
         if isinstance(document, dict):
