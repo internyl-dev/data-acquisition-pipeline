@@ -1,3 +1,16 @@
+
+from src.features.databases import FirebaseClient
+
+def get_all_subjects(client:FirebaseClient):
+    data = client.get_all_data("programs-display")
+    subjects = set()
+    for program in data:
+        subjects.update(data[program]["overview"]["subject"])
+    return list(subjects)
+
+db = FirebaseClient.get_instance()
+all_subjects = get_all_subjects(db)
+
 INSTRUCTIONS = {
     "overview": """
 You are given a partially filled JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. Your task is to update only the 'overview' section using information from the text after WEBPAGE CONTENTS START HERE.
@@ -266,7 +279,11 @@ SECTION INSTRUCTIONS:
   - If no direct subject can be found, infer at least one subject based on the name or description, or if absolutely not clear, put "various".
 - "tags": Use literal keywords (e.g., "free", "residential", "virtual", etc.).
 
-Never derive subject areas or tags from theme or domain unless exact keywords appear in the text.
+Below are a list of subjects that currently exist in our database:\n"""
++str(all_subjects)+"""\n
+If the program subjects fall under any of the following subjects, label it with those specific subjects instead no matter what specific wording the program uses.
+For example if the program has subject "AI", since "Artifical Intelligence" is already an existent subject, label it with "Artificial Intelligence" instead.
+The same goes for "Arts" and "Art". Use "Art" instead.
 
 2. ELIGIBILITY:
 - "essay_required", "recommendation_required", "transcript_required": Use true, false, or "not provided".

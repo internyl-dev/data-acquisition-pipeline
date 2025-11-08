@@ -17,9 +17,9 @@ class SystemInstructionsBuilder:
         self.instructions_obj = instructions_obj or SystemInstructions()
     
     def add_instructions(self, target_info:str|Fields):
+        "Creates instructions based on the given enum target info"
         if isinstance(target_info, Fields):
             target_info = target_info.value
-        "Creates instructions based on the given enum target info"
         self.instructions_obj.instructions = INSTRUCTIONS[target_info]
         return self
     
