@@ -21,10 +21,9 @@ class TestHTMLCleaner(unittest.TestCase):
 
     def test_whitespace_cleaner(self):
         raw_soup = BeautifulSoup(sample_html, "html.parser")
-        raw_contents = raw_soup.get_text()
         whitespace_cleaner = HTMLWhitespaceCleaner()
 
-        contents = whitespace_cleaner.clean(raw_contents)
+        contents = whitespace_cleaner.clean(raw_soup)
         lines = contents.split('\n')
 
         self.assertFalse(

@@ -15,12 +15,15 @@ class HTMLDeclutterer(HTMLCleaner):
     remove_button:bool=True
     remove_option:bool=True
 
-    def _remove_element(self, element:str, soup:BeautifulSoup):
-        elements = soup.find(element)
+    @staticmethod
+    def _remove_element(element:str, soup:BeautifulSoup):
+        elements = soup.find_all(element)
         
+        # No elements found
         if not elements:
             return soup
         
+        # Remove all found elements
         for elm in elements:
             elm.decompose()
         
@@ -44,29 +47,29 @@ class HTMLDeclutterer(HTMLCleaner):
 
         return soup
     
-    def _remove_select(self, soup:BeautifulSoup):
+    def _remove_select(self, soup:BeautifulSoup) -> BeautifulSoup:
         return self._remove_element('select', soup)
     
-    def _remove_textarea(self, soup:BeautifulSoup):
+    def _remove_textarea(self, soup:BeautifulSoup) -> BeautifulSoup:
         return self._remove_element('textarea', soup)
     
-    def _remove_button(self, soup:BeautifulSoup):
+    def _remove_button(self, soup:BeautifulSoup) -> BeautifulSoup:
         return self._remove_element('button', soup)
     
-    def _remove_option(self, soup:BeautifulSoup):
+    def _remove_option(self, soup:BeautifulSoup) -> BeautifulSoup:
         return self._remove_element('option', soup)
 
-    def _remove_forms(self, soup:BeautifulSoup):
+    def _remove_forms(self, soup:BeautifulSoup) -> BeautifulSoup:
         # These are all common form elements that can have text
         # Often contain tens of options that just clutter context
-        soup = self._remove_select(soup) if self.remove_select else soup
-        soup = self._remove_textarea(soup) if self.remove_textarea else soup
-        soup = self._remove_button(soup) if self.remove_button else soup
-        soup = self._remove_option(soup) if self.remove_option else soup
+        self._remove_select(soup) if self.remove_select else soup
+        self._remove_textarea(soup) if self.remove_textarea else soup
+        self._remove_button(soup) if self.remove_button else soup
+        self._remove_option(soup) if self.remove_option else soup
 
         return soup
 
-    def clean(self, soup:BeautifulSoup):
+    def clean(self, soup:BeautifulSoup) -> BeautifulSoup:
         """
         Removes all HTML elements from BeautifulSoup object that would clutter the page contents.
 
@@ -76,15 +79,15 @@ class HTMLDeclutterer(HTMLCleaner):
         Returns:
             soup (BeautifulSoup): HTML contents with cluttering elements removed
         """
-        soup = self._remove_navigation(soup)
-        soup = self._remove_forms(soup)
+        self._remove_navigation(soup)
+        self._remove_forms(soup)
         
         return soup
 
 
 
 class HTMLWhitespaceCleaner(HTMLCleaner):
-    def clean(self, soup:BeautifulSoup):
+    def clean(self, soup:BeautifulSoup) -> BeautifulSoup:
         """
         Removes excessive white space from a string.
 

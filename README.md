@@ -84,7 +84,7 @@ src/
 The HTML contents are first turned into a BeautifulSoup object for parsing. To declutter the HTML, we remove all problematic tags (eg. header, nav footer) to reduce the token count when creating the context. We then remove all unecessary and repeating whitespace to make the context more human-readable.
 
 #### Features
-- ``
+- `clean(soup:BeautifulSoup) -> BeautifulSoup`
 
 ### Content Summarization
 
