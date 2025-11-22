@@ -50,6 +50,13 @@ The entire process is a recursive loop where we take the HTML contents of a webp
 
 ### Web Scraping 
 
+```
+src/
+└── features/
+    └── web_scrapers/
+        └── playwright_client.py
+```
+
 Given the URL to the homepage of an internship website, we use Playwright to visit the website. Playwright then scrapes the webpage contents. We specifically scrape from the inner body element so as to ignore unneeded script tags.
 
 #### Features
@@ -66,19 +73,69 @@ Given the URL to the homepage of an internship website, we use Playwright to vis
 
 ### HTML Parsing
 
+```
+src/
+└── features/
+    └── html_cleaners/
+        ├── base_html_cleaner.py
+        └── html_cleaner.py
+```
+
 The HTML contents are first turned into a BeautifulSoup object for parsing. To declutter the HTML, we remove all problematic tags (eg. header, nav footer) to reduce the token count when creating the context. We then remove all unecessary and repeating whitespace to make the context more human-readable.
 
+#### Features
+- ``
+
 ### Content Summarization
+
+```
+src/
+└── features/
+    └── content_summarizers/
+        ├── base_content_extractor.py
+        ├── content_extractors.py
+        ├── content_keywords.py
+        └── content_trimmer.py
+```
 
 Based on the current state of the dictionary containing all of the info about the program, we determine what info is required. We then truncate the contents for lines that include keywords, including the lines above and below the target lines. <br>
 **_NOTE:_** On the first step of the extraction loop, we perform a **bulk extraction** where we don't truncate the HTML contents.
 
 ### Client
 
+```
+src/
+└── features/
+    ├── ai_processors/
+    │   ├── prompt_chain/
+    │   │   ├── executor.py
+    │   │   └── prompt_builder.py
+    │   ├── prompt_constructors/
+    │   │   ├── cpt_builder.py
+    │   │   ├── instructions_builder.py
+    │   │   ├── instructions.py
+    │   │   └── query_builder.py
+    │   └── azure_client.py
+    └── databases/
+        ├── base_database.py
+        └── firebase_client.py
+```
+
 The client sends a request to the endpoint specified in `.env` and retrieves the response. The prompt is usually based on which required info is being extracted at the moment (except in bulk extraction) The processed schema is then extracted from the response including any other necessary information like the prompt and completions token count for logging purposes. 
-**_NOTE:_** In bulk extraction, all required info is requested by the client at once.
+<br>**_NOTE:_** In bulk extraction, all required info is requested by the client at once.
 
 ### Web Crawling
+
+```
+src/
+└── features/
+    └── web_crawler/
+        ├── url_extractor.py
+        ├── url_filter.py
+        ├── url_keywords.py
+        ├── url_processor.py
+        └── url_ranker.py
+```
 
 If any other info is required, we retrieve all anchor elements from within the scraped HTML and look for valid links. Based on the links and the content of the anchor element, we filter the links, again for specific keywords, to look for links that potentially contain required information. Recursion again starts when we call the entire method with the new link as an argument. <br>
 During link extraction, if the queue is detected to have a length higher than a threshold (default 5), we send the queue to the model to intelligently remove any irrelevant links that may have been extracted coincidentally with our keyword system. This system cuts extraction time and costs by a significant amount in websites bloated with irrelevant links. 
