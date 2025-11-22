@@ -84,7 +84,12 @@ src/
 The HTML contents are first turned into a BeautifulSoup object for parsing. To declutter the HTML, we remove all problematic tags (eg. header, nav footer) to reduce the token count when creating the context. We then remove all unecessary and repeating whitespace to make the context more human-readable.
 
 #### Features
-- `clean(soup:BeautifulSoup) -> BeautifulSoup`
+- `clean(soup:BeautifulSoup) -> BeautifulSoup` : The `HTMLDeclutterer` class removes all unecessary HTML elements from the soup object like navs, headers, and form elements, all of which don't provide meaningful data.
+- `clean(soup:BeautifulSoup) -> str` : The `HTMLWhitespaceCleaner` class removes all unecessary whitespace and returns a string.
+
+#### Issues + Future Fixes
+- **Problem:** One `clean` method returning a `BeautifulSoup` object and the other returning a `str` isn't standard and can cause confusion. 
+- **Solution:** Decide between functionality or standardization. I value standardization more since it makes the project more scalable. 
 
 ### Content Summarization
 
