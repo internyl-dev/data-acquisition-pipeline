@@ -134,31 +134,44 @@ class RootSchema(BaseSchemaSection):
             return self.contact
 
 class SchemaModelFactory:
+    "Returns the the class representation of a section of the schema"
     @staticmethod
     def make_overview():
+        "Returns the Overview class"
         return Overview
     
     @staticmethod
     def make_eligibility():
+        "Returns the Eligibility class"
         return Eligibility
     
     @staticmethod
     def make_dates():
+        "Returns the Dates class"
         return Dates
     
     @staticmethod
     def make_locations():
+        "Returns the Locations class"
         return Locations
     
     @staticmethod
     def make_costs():
+        "Returns the Costs class"
         return Costs
 
     @staticmethod
     def make_contact():
+        "Returns the Contact class"
         return Contact
     
+    @staticmethod 
+    def make_root():
+        "Returns the RootSchema class"
+        return RootSchema
+    
     def make(self, s:str|Fields):
+        "Returns the specified class based on the given string"
         if isinstance(s, Fields):
             s = s.value
 
@@ -169,9 +182,10 @@ class SchemaModelFactory:
             "locations": self.make_locations,
             "costs": self.make_costs,
             "contact": self.make_contact,
+            "all": self.make_root
         }
 
-        return sections[s]() if s != "all" else RootSchema
+        return sections[s]()
     
 if __name__ == "__main__":
 
