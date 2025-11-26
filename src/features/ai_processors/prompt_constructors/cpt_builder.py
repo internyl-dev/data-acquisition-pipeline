@@ -15,16 +15,22 @@ class ChatPromptTemplateBuilder:
     instructions: str = None
     query: str = None
 
-    def _create_parser_from_str(self, target_info:str, factory:SchemaModelFactory=None):
+    def _create_parser_from_str(self, target_info:str, factory:SchemaModelFactory=None) -> None:
+        "Sets instance parser variable"
         factory = factory or SchemaModelFactory()
         # The factory returns the specified section class 
         # which is then passed into the output parser constructor
+        if not isinstance(target_info, str):
+            raise TypeError(f"`target_info` should be a string, got {type(target_info)}")
+        
         self.parser = PydanticOutputParser(pydantic_object=factory.make(target_info))
 
     def add_parser(self, target_info:str|Fields, factory:SchemaModelFactory=None) -> Self:
         "Adds a `BaseModel` parser to be added to the `ChatPromptTemplate`"
         if isinstance(target_info, Fields):
             target_info = target_info.value
+        elif not isinstance(target_info, str):
+            raise (f"`target_info` should either be a string or a `Fields` enum, got {type(target_info)}")
         
         self._create_parser_from_str(target_info, factory=factory)
 
@@ -33,14 +39,16 @@ class ChatPromptTemplateBuilder:
     def add_instructions(self, instructions:str) -> Self:
         "Adds the string system instructions to be added to the `ChatPromptTemplate`"
         if not isinstance(instructions, str):
-            raise TypeError("instructions should be a string")
+            raise TypeError(f"`instructions` should be a string, got {type(instructions)}")
+        
         self.instructions = instructions
         return self
     
     def add_query(self, query:str) -> Self:
         "Adds a string query to be added to the `ChatPromptTemplate`"
         if not isinstance(query, str):
-            raise TypeError("query should be a string")
+            raise TypeError(f"`query` should be a string, got {type(query)}")
+        
         self.query = query
         return self
 

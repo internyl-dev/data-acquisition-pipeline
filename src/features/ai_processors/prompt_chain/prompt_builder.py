@@ -19,19 +19,24 @@ class PromptChainPromptBuilder:
         which will be included in the query
     """
     def __init__(self, schema: dict|BaseSchemaSection):
-
         self.schema = schema
 
     def _build_system_instructions(self, target_info:str|Fields) -> str:
         "Automatically constructs the system instructions given some target info"
+        if not (isinstance(target_info, str) or isinstance(target_info, Fields)):
+            raise TypeError(f"`target_info` should be a string or a `Fields` enum, got {type(target_info)}")
+        
         builder = SystemInstructionsBuilder()
         builder.add_instructions(target_info)
         instructions_obj = builder.get_obj()
 
         return instructions_obj.get_instructions()
 
-    def _legacy_build_query(self, contents) -> str:
+    def _legacy_build_query(self, contents:str) -> str:
         "Automatically constructs the query given the dictionary schema and some webpage contents"
+        if not isinstance(contents, str):
+            raise TypeError(f"`contents` should be a string, got {type(contents)}")
+        
         builder = QueryBuilder()
         builder.add_schema_context(self.schema) \
                .add_title(self.schema["overview"]["title"]) \
@@ -42,8 +47,11 @@ class PromptChainPromptBuilder:
 
         return query_obj.get_prompt()
     
-    def _build_query(self, contents) -> str:
+    def _build_query(self, contents:str) -> str:
         "Automatically constructs the query given the BaseSchemaSection schema and some webpage contents"
+        if not isinstance(contents, str):
+            raise TypeError(f"`contents` should be a string, got {type(contents)}")
+
         builder = QueryBuilder()
         builder.add_schema_context(json.dumps(self.schema.model_json_schema())) \
                .add_title(self.schema.overview.title) \
@@ -54,9 +62,16 @@ class PromptChainPromptBuilder:
 
         return query_obj.get_prompt()
     
-    def _build_prompt(self, target_info, instructions, query) -> ChatPromptTemplate:
+    def _build_prompt(self, target_info:str|Fields, instructions:str, query:str) -> ChatPromptTemplate:
         """Automatically constructs a `ChatPromptTemplate` object 
         given the system instructions and a query as strings"""
+        if not (isinstance(target_info, str) or isinstance(target_info, Fields)):
+            raise TypeError(f"`target_info` should be a string or a `Fields` enum, got {type(target_info)}")
+        if not isinstance(instructions, str):
+            raise TypeError(f"`instructions` should be a string, got {type(instructions)}")
+        if not isinstance(query, str):
+            raise TypeError(f"`query` should be a string, got {type(query)}")
+        
         builder = ChatPromptTemplateBuilder()
         builder.add_parser(target_info) \
                .add_instructions(instructions) \
@@ -65,7 +80,7 @@ class PromptChainPromptBuilder:
 
         return prompt_obj
     
-    def build(self, target_info: str|Fields, contents:str) -> ChatPromptTemplate:
+    def build(self, target_info:str|Fields, contents:str) -> ChatPromptTemplate:
         """
         Automatically builds a prompt given the target information
         and some contents\n
@@ -80,6 +95,11 @@ class PromptChainPromptBuilder:
             prompt (ChatPromptTemplate): The object with which to pass as an argument into
             a chat object when invoking it
         """
+        if not (isinstance(target_info, str) or isinstance(target_info, Fields)):
+            raise TypeError(f"`target_info` should be a string or a `Fields` enum, got {type(target_info)}")
+        if not isinstance(contents, str):
+            raise TypeError(f"`contents` should be a string, got {type(contents)}")
+        
         if isinstance(self.schema, BaseSchemaSection):
             build_query = self._build_query
         elif isinstance(self.schema, dict):

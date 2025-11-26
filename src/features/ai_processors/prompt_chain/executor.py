@@ -33,11 +33,13 @@ class PromptChainExecutor:
         self.all_target_info = all_target_info or self.validator.validate_all(self.schema)
         self.prompt_builder = PromptChainPromptBuilder(schema)
     
-    def _all_info_needed(self, target_info) -> bool:
+    def _all_info_needed(self, target_info:list) -> bool:
         "The clause for when to activate bulk extraction"
+        if not isinstance(target_info, list):
+            raise TypeError(f"`target_info` should be a list, got {type(target_info)}")
         return len(target_info) == 6
     
-    def _build_prompt(self, target_info, contents):
+    def _build_prompt(self, target_info:str, contents):
         "Builds the prompt to pass into the chat model"
         return self.prompt_builder.build(target_info, contents)
 
