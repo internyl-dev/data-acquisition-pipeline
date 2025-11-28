@@ -2,7 +2,7 @@
 import asyncio
 from bs4 import BeautifulSoup
 from pprint import pp
-from dataclasses import dataclass
+from typing import Optional
 
 from .models import History, FIFO, FILO, Queue, RootSchema, QueueItem
 
@@ -16,54 +16,53 @@ from .features.logger import Logger
 
 from .utils import minimize_required_info, AIQueueFilter
 
-@dataclass
 class Main:
-    log_mode: bool=True
-    headless: bool=True
+    def __init__(
+        self,
+        log_mode: bool = True,
+        headless: bool = True,
+        history: Optional[History] = None,
+        queue: Optional[Queue] = None,
+        schema: Optional[RootSchema] = None,
+        log: Optional[Logger] = None,
+        scraper: Optional[PlaywrightClient] = None,
+        declutterer: Optional[HTMLDeclutterer] = None,
+        whitespace_cleaner: Optional[HTMLWhitespaceCleaner] = None,
+        validator: Optional[SchemaValidationEngine] = None,
+        trimmer: Optional[ContentTrimmer] = None,
+        email_extractor: Optional[EmailExtractor] = None,
+        pn_extractor: Optional[PhoneNumberExtractor] = None,
+        date_extractor: Optional[DateExtractor] = None,
+        url_extractor: Optional[URLExtractor] = None,
+        url_processor: Optional[URLProcessor] = None,
+        url_ranker: Optional[URLRanker] = None,
+        url_filter: Optional[URLFilter] = None,
+        ai_queue_filter: Optional[AIQueueFilter] = None
+        ) -> None:
+        self.log_mode = log_mode
+        self.headless = headless
 
-    history=None
-    queue=None
-    schema=None
+        self.history = history or History()
+        self.queue = queue or Queue()
+        self.schema = schema or RootSchema()
 
-    log=None
-
-    scraper=None
-    declutterer=None
-    whitespace_cleaner=None
-    validator=None
-    trimmer=None
-    email_extractor=None
-    pn_extractor=None
-    date_extractor=None
-    url_extractor=None
-    url_processor=None
-    url_ranker=None
-    url_filter=None
-    ai_queue_filter=None
-
-    def __post_init__(self):
-
-        self.history = self.history or History()
-        self.queue = self.queue or Queue()
-        self.schema = self.schema or RootSchema()
-
-        self.log = self.log or Logger(log_mode=self.log_mode)
+        self.log = log or Logger(log_mode=self.log_mode)
         self.log.create_logging_files()
         self.log.apply_conditional_logging()
 
-        self.scraper            = self.scraper            or PlaywrightClient()
-        self.declutterer        = self.declutterer        or HTMLDeclutterer(remove_header=False, remove_nav=False)
-        self.whitespace_cleaner = self.whitespace_cleaner or HTMLWhitespaceCleaner()
-        self.validator          = self.validator          or SchemaValidationEngine()
-        self.trimmer            = self.trimmer            or ContentTrimmer()
-        self.email_extractor    = self.email_extractor    or EmailExtractor()
-        self.pn_extractor       = self.pn_extractor       or PhoneNumberExtractor()
-        self.date_extractor     = self.date_extractor     or DateExtractor()
-        self.url_extractor      = self.url_extractor      or URLExtractor()
-        self.url_processor      = self.url_processor      or URLProcessor()
-        self.url_ranker         = self.url_ranker         or URLRanker()
-        self.url_filter         = self.url_filter         or URLFilter()
-        self.ai_queue_filter    = self.ai_queue_filter    or AIQueueFilter(self.log)
+        self.scraper = scraper or PlaywrightClient()
+        self.declutterer = declutterer or HTMLDeclutterer(remove_header=False, remove_nav=False)
+        self.whitespace_cleaner = whitespace_cleaner or HTMLWhitespaceCleaner()
+        self.validator = validator or SchemaValidationEngine()
+        self.trimmer = trimmer or ContentTrimmer()
+        self.email_extractor = email_extractor or EmailExtractor()
+        self.pn_extractor = pn_extractor or PhoneNumberExtractor()
+        self.date_extractor = date_extractor or DateExtractor()
+        self.url_extractor = url_extractor or URLExtractor()
+        self.url_processor = url_processor or URLProcessor()
+        self.url_ranker = url_ranker or URLRanker()
+        self.url_filter = url_filter or URLFilter()
+        self.ai_queue_filter = ai_queue_filter or AIQueueFilter(self.log)
 
     def scrape(self, url):
         self.log.update("TRIMMER: Scraping...")
@@ -143,6 +142,7 @@ class Main:
 
         response = PromptChainExecutor(schema=self.schema, all_target_info=all_target_info, log=self.log).run(contents)
         self.log.update(response)
+        assert isinstance(response, RootSchema) # REMOVE LATER WHEN TYPE CHECKING IS FIXED
         self.schema = response
 
         all_target_info = self.validator.validate_all(self.schema)

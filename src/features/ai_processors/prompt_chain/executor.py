@@ -1,14 +1,15 @@
 
 import json
 
-from langchain.output_parsers import PydanticOutputParser 
+from langchain.output_parsers import PydanticOutputParser, ChatPromptValue, BaseMessage
+from typing import Optional
 
 from src.features.content_summarizers import ContentTrimmer
 from src.features.logger import Logger
-from src.features.ai_processors import azure_chat_openai, create_chat_prompt_template
+from src.features.ai_processors import azure_chat_openai
 from src.features.schema_validators import SchemaValidationEngine
-from .prompt_builder import PromptChainPromptBuilder
-from src.models import Fields, BaseSchemaSection, SchemaModelFactory
+from .prompt_builder import PromptChainPromptBuilder, ChatPromptTemplate
+from src.models import Fields, RootSchema, SchemaModelFactory
 
 class PromptChainExecutor:
     """
@@ -20,14 +21,20 @@ class PromptChainExecutor:
         schema (dict | BaseSchemaSection): The schema in any state (populated or unpopulated)
         all_target_info (list[str | Fields]): The target information during the prompt chain
     """
-    def __init__(self, 
-                 schema: dict|BaseSchemaSection, 
-                 all_target_info:list[str|Fields]=None, 
-                 validator=None, trimmer=None, factory=None, log=None):
+    def __init__(
+        self, 
+        schema: RootSchema, 
+        all_target_info: Optional[list[str|Fields]] = None, 
+        validator: Optional[SchemaValidationEngine] = None, 
+        trimmer: Optional[ContentTrimmer] = None, 
+        factory: Optional[SchemaModelFactory] = None, 
+        log: Optional[Logger] = None
+        ) -> None:
+
         self.trimmer = trimmer or ContentTrimmer()
         self.factory = factory or SchemaModelFactory()
         self.log = log or Logger(log_mode=False)
-        self.validator = validator or SchemaValidationEngine()
+        self.validator = validator or SchemaValidationEngine(return_str=True)
 
         self.schema = schema
         self.all_target_info = all_target_info or self.validator.validate_all(self.schema)
@@ -35,19 +42,19 @@ class PromptChainExecutor:
     
     def _all_info_needed(self, target_info:list) -> bool:
         "The clause for when to activate bulk extraction"
-        if not isinstance(target_info, list):
-            raise TypeError(f"`target_info` should be a list, got {type(target_info)}")
         return len(target_info) == 6
     
-    def _build_prompt(self, target_info:str, contents):
+    def _build_prompt(self, target_info:str, contents:str) -> ChatPromptTemplate:
         "Builds the prompt to pass into the chat model"
         return self.prompt_builder.build(target_info, contents)
 
-    def run(self, contents) -> BaseSchemaSection:
+    def run(self, contents:str) -> RootSchema:
         """Loops through the target info at each iteration 
         makeing a prompt object, passing it into a chat, 
         invoking the chat, and updating the current schema"""
+
         self.log.update(f"PROMPT EXECUTOR: Executing prompt chain for the following info: {self.all_target_info}")
+
         for target_info in self.all_target_info:
             self.log.update(f"PROMPT EXECUTOR: Creating prompt for {target_info}")
 
@@ -55,16 +62,16 @@ class PromptChainExecutor:
                 self.log.update("PROMPT EXECUTOR: Ignore previous log, bulk extraction activated. Creating prompt for ALL")
                 target_info = "all"
             
-            trimmed_contents = self.trimmer.truncate_contents(contents, target_info, 500, 1)
+            trimmed_contents: str = self.trimmer.truncate_contents(contents, target_info, 500, 1)
             self.log.update(trimmed_contents)
 
-            prompt = self._build_prompt(target_info, trimmed_contents)
+            prompt: ChatPromptTemplate = self._build_prompt(target_info, trimmed_contents)
             #self.log.update(prompt.partial_variables)
-            parser = PydanticOutputParser(pydantic_object=self.factory.make(target_info))
-            prompt_value = prompt.format_prompt()
+            parser: PydanticOutputParser = PydanticOutputParser(pydantic_object=self.factory.make(target_info))
+            prompt_value: ChatPromptValue = prompt.format_prompt()
 
             self.log.update("PROMPT EXECUTOR: Sending request...")
-            response = azure_chat_openai.invoke(prompt_value)
+            response: BaseMessage = azure_chat_openai.invoke(prompt_value)
             self.log.update(json.loads(response.content))
 
             try:
@@ -92,8 +99,10 @@ class PromptChainExecutor:
                     self.schema.costs = parsed_schema
                 if target_info == Fields.CONTACT:
                     self.schema.contact = parsed_schema
+
         return self.schema
     
     
 if __name__ == "__main__":
-    chain = PromptChainExecutor()
+    #chain = PromptChainExecutor()
+    print("need thing")

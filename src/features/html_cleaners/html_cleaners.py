@@ -7,8 +7,8 @@ from .base_html_cleaner import HTMLCleaner
 
 @dataclass
 class HTMLDeclutterer(HTMLCleaner):
-    remove_header:bool=True,
-    remove_nav:bool=True,
+    remove_header:bool=True
+    remove_nav:bool=True
     remove_footer:bool=True
     remove_select:bool=True
     remove_textarea:bool=True
