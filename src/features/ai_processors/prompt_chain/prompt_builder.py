@@ -58,7 +58,7 @@ class PromptChainPromptBuilder:
                .add_description(schema.overview.description) \
                .add_provider(schema.overview.provider) \
                .add_webpage_contents(contents)
-        query_obj = builder.get_prompt_obj()
+        query_obj: Query = builder.get_prompt_obj()
 
         return query_obj.get_prompt()
     

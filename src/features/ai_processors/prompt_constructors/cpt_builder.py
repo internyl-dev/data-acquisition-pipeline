@@ -1,7 +1,7 @@
 
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from typing_extensions import Self
+from typing import Self, Optional
 from dataclasses import dataclass
 
 from src.models import SchemaModelFactory
@@ -11,26 +11,22 @@ from src.models import Fields
 class ChatPromptTemplateBuilder:
     "Builds a `ChatPromptTemplate` object after adding a parser, instructions, and query"
 
-    parser: PydanticOutputParser = None
-    instructions: str = None
-    query: str = None
+    parser: Optional[PydanticOutputParser] = None
+    instructions: Optional[str] = None
+    query: Optional[str] = None
 
-    def _create_parser_from_str(self, target_info:str, factory:SchemaModelFactory=None) -> None:
+    def _create_parser_from_str(self, target_info:str, factory: Optional[SchemaModelFactory] = None) -> None:
         "Sets instance parser variable"
-        factory = factory or SchemaModelFactory()
         # The factory returns the specified section class 
         # which is then passed into the output parser constructor
-        if not isinstance(target_info, str):
-            raise TypeError(f"`target_info` should be a string, got {type(target_info)}")
+        factory = factory or SchemaModelFactory()
         
         self.parser = PydanticOutputParser(pydantic_object=factory.make(target_info))
 
-    def add_parser(self, target_info:str|Fields, factory:SchemaModelFactory=None) -> Self:
+    def add_parser(self, target_info:str|Fields, factory: Optional[SchemaModelFactory] = None) -> Self:
         "Adds a `BaseModel` parser to be added to the `ChatPromptTemplate`"
         if isinstance(target_info, Fields):
             target_info = target_info.value
-        elif not isinstance(target_info, str):
-            raise (f"`target_info` should either be a string or a `Fields` enum, got {type(target_info)}")
         
         self._create_parser_from_str(target_info, factory=factory)
 
@@ -38,23 +34,19 @@ class ChatPromptTemplateBuilder:
 
     def add_instructions(self, instructions:str) -> Self:
         "Adds the string system instructions to be added to the `ChatPromptTemplate`"
-        if not isinstance(instructions, str):
-            raise TypeError(f"`instructions` should be a string, got {type(instructions)}")
-        
         self.instructions = instructions
         return self
     
     def add_query(self, query:str) -> Self:
         "Adds a string query to be added to the `ChatPromptTemplate`"
-        if not isinstance(query, str):
-            raise TypeError(f"`query` should be a string, got {type(query)}")
         
         self.query = query
         return self
 
     def _create_chat_prompt_template(self) -> None:
         "Creates a `ChatPromptTemplate` using the components given to itself"
-        prompt_obj = ChatPromptTemplate.from_messages(
+        if self.parser is None: raise TypeError("The parser hasn't been added yet, cannot get format instructions")
+        prompt_obj: ChatPromptTemplate = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
@@ -77,7 +69,7 @@ class ChatPromptTemplateBuilder:
         """Returns the `ChatPromptTemplate` object created by the builder
         or builds it and then returns it if it hasn't been built yet"""
 
-        missing = []
+        missing: list[str] = []
         if self.parser is None: missing.append("parser")
         if self.instructions is None: missing.append("instructions")
         if self.query is None: missing.append("query")

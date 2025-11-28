@@ -24,7 +24,7 @@ class PromptChainExecutor:
     def __init__(
         self, 
         schema: RootSchema, 
-        all_target_info: Optional[list[str|Fields]] = None, 
+        all_target_info: Optional[list[str]] = None, 
         validator: Optional[SchemaValidationEngine] = None, 
         trimmer: Optional[ContentTrimmer] = None, 
         factory: Optional[SchemaModelFactory] = None, 
@@ -34,10 +34,10 @@ class PromptChainExecutor:
         self.trimmer = trimmer or ContentTrimmer()
         self.factory = factory or SchemaModelFactory()
         self.log = log or Logger(log_mode=False)
-        self.validator = validator or SchemaValidationEngine(return_str=True)
+        self.validator = validator or SchemaValidationEngine()
 
         self.schema = schema
-        self.all_target_info = all_target_info or self.validator.validate_all(self.schema)
+        self.all_target_info = all_target_info or self.validator.validate_all(self.schema, return_str=True)
         self.prompt_builder = PromptChainPromptBuilder(schema)
     
     def _all_info_needed(self, target_info:list) -> bool:
@@ -56,6 +56,8 @@ class PromptChainExecutor:
         self.log.update(f"PROMPT EXECUTOR: Executing prompt chain for the following info: {self.all_target_info}")
 
         for target_info in self.all_target_info:
+            assert isinstance(target_info, str)
+
             self.log.update(f"PROMPT EXECUTOR: Creating prompt for {target_info}")
 
             if self._all_info_needed(self.all_target_info):

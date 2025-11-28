@@ -87,7 +87,7 @@ class HTMLDeclutterer(HTMLCleaner):
 
 
 class HTMLWhitespaceCleaner(HTMLCleaner):
-    def clean(self, soup:BeautifulSoup) -> str:
+    def clean(self, soup:BeautifulSoup) -> BeautifulSoup:
         """
         Removes excessive white space from a string.
 
@@ -103,4 +103,4 @@ class HTMLWhitespaceCleaner(HTMLCleaner):
         contents = re.sub(r'\n\s*\n+', '\n', contents)
         contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE)
 
-        return contents
+        return BeautifulSoup(contents, )

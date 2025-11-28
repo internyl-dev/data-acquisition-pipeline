@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from dataclasses import dataclass
 from .queue_strategies import QueueStrategy, FIFO, FILO
 from .schema_fields import Fields
-from typing import List
+from typing import List, Optional
 
 @dataclass
 class QueueItem:
@@ -14,7 +14,7 @@ class QueueItem:
     - The scraping priority
     """
     url: str
-    target_fields: list[str | Fields]
+    target_fields: list[str] | list[Fields]
     priority: int=0
     
 class Queue:
@@ -26,33 +26,33 @@ class Queue:
     A queue strategy can be added upon instantiation to
     determine the behavior of the queue methods
     """
-    def __init__(self, strat:QueueStrategy=None):
-        self.items = []
-        self.default_strat = strat or FIFO
+    def __init__(self, strat: Optional[type[QueueStrategy]] = None) -> None:
+        self.items: list[QueueItem] = []
+        self.default_strat: type[QueueStrategy] = strat or FIFO
 
-    def add(self, item:QueueItem, strat:QueueStrategy=None) -> None:
+    def add(self, item:QueueItem, strat: Optional[type[QueueStrategy]]=None) -> None:
         "Adds an item to the queue."
         strat = strat or self.default_strat
-        strat_obj = strat(self.items)
+        strat_obj: QueueStrategy = strat(self.items)
         strat_obj.add(item)
         self.items = strat_obj._items
 
-    def get(self, strat:QueueStrategy=None) -> QueueItem:
+    def get(self, strat: Optional[type[QueueStrategy]] = None) -> Optional[QueueItem]:
         """
         Returns an item from the queue given a strategy
         along with its deletion.
         """
         strat = strat or self.default_strat
-        strat_obj = strat(self.items)
-        item = strat_obj.get()
+        strat_obj: QueueStrategy[QueueItem] = strat(self.items)
+        item: QueueItem | None = strat_obj.get()
         self.items = strat_obj._items
         return item
     
-    def peek(self, strat:QueueStrategy=None) -> QueueItem:
+    def peek(self, strat: Optional[type[QueueStrategy]] = None) -> Optional[QueueItem]:
         "Returns an item from the queue without deletion"
         strat = strat or self.default_strat
-        strat_obj = strat(self.items)
-        item = strat_obj.peek()
+        strat_obj: QueueStrategy[QueueItem] = strat(self.items)
+        item: QueueItem | None = strat_obj.peek()
         return item
 
     def is_in(self, item:QueueItem) -> bool:
@@ -63,7 +63,7 @@ class Queue:
         Args:
             item (any): The item to check
         """
-        items = [item.url for item in self.items]
+        items: list[str] = [item.url for item in self.items]
         return (item.url in items)
     
     def find(self, item:QueueItem) -> QueueItem | None:
@@ -78,9 +78,9 @@ class Queue:
         Replaces the item in the queue that has the same
         link as the argument given with the argument
         """
-        q_item = self.find(item)
+        q_item: QueueItem | None = self.find(item)
         if q_item:
-            index = self.items.index(q_item)
+            index: int = self.items.index(q_item)
             self.items[index] = item
 
     def get_length(self) -> int:
@@ -89,7 +89,7 @@ class Queue:
     
     def get_all_urls(self) -> List[str]:
         "Get all the URLs from each item as a list of strings"
-        all_urls = []
+        all_urls: list[str] = []
         for item in self.items:
             all_urls.append(item.url)
         return all_urls
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     print(queue.items)
 
-    item = queue.get()
+    item: QueueItem | None = queue.get()
     print(item)
 
     print(queue.items)
@@ -122,8 +122,8 @@ if __name__ == "__main__":
     queue.replace(item3)
     print(queue.items)
 
-    item4 = QueueItem(url="third", target_fields="yeah")
-    item5 = QueueItem(url="fourth", target_fields="yerr")
+    item4 = QueueItem(url="third", target_fields=["yeah"])
+    item5 = QueueItem(url="fourth", target_fields=["yerr"])
     queue.add(item4)
     queue.add(item5)
 

@@ -4,5 +4,5 @@ from bs4 import BeautifulSoup
 
 class HTMLCleaner(ABC):
     @abstractmethod
-    def clean(self, soup:BeautifulSoup):
+    def clean(self, soup:BeautifulSoup) -> BeautifulSoup:
         "Cleans parsed HTML contents"

@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pprint import pp
 from typing import Optional
 
-from .models import History, FIFO, FILO, Queue, RootSchema, QueueItem
+from .models import History, FIFO, FILO, Queue, RootSchema, QueueItem, Fields
 
 from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner

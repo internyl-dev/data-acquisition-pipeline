@@ -1,6 +1,6 @@
 
 import json
-from typing import Self
+from typing import Self, Optional
 
 class Query:
     def __init__(self):
@@ -14,26 +14,20 @@ class Query:
         "Adds the schema as context to be used by the model"
         if isinstance(schema, dict):
             schema = json.dumps(schema)
-        elif not isinstance(schema, str):
-            raise TypeError(f"`schema` should be a string, got {type(schema)}")
         
         self.prompt_architecture["schema_context"].append(schema)
 
     def add_program_context(self, s:str) -> None:
         "Adds information about the program to be used as context by the model"
-        if not isinstance(s, str):
-            raise TypeError(f"`s` should be a string, got {type(s)}")
         self.prompt_architecture["program_context"].append(s)
 
     def add_webpage_contents(self, s:str) -> None:
         "Adds the contents of a webpage to be used to find new information"
-        if not isinstance(s, str):
-            raise TypeError(f"`s` should be a string, got {type(s)}")
         self.prompt_architecture["webpage_contents"].append(s)
 
     def get_prompt(self) -> str:
         "Returns the entire query as a string"
-        prompt = []
+        prompt: list[str] = []
         for key in self.prompt_architecture:
             prompt.append('\n'.join(self.prompt_architecture[key]))
 
@@ -46,7 +40,7 @@ class QueryBuilder:
     you can get the string representation of the query you built
     and pass that string into a `ChatPromptTemplateBuilder`
     """
-    def __init__(self, prompt_obj:Query=None):
+    def __init__(self, prompt_obj: Optional[Query] = None) -> None:
         self.prompt_obj = prompt_obj or Query()
         self.schema_context = self.prompt_obj.prompt_architecture["schema_context"]
         self.program_context = self.prompt_obj.prompt_architecture["program_context"]
@@ -65,9 +59,7 @@ class QueryBuilder:
         self.prompt_obj.add_webpage_contents("WEBPAGE CONTENTS START HERE:")
 
     def add_schema_context(self, context:str) -> Self:
-        if not isinstance(context, str):
-            raise TypeError(f"`context` should be a string, got {type(context)}")
-        
+        "Adds the schema in its current state for the model to determine what data needs to be scraped"
         if not self.schema_context:
             self._add_schema_context_boiler()
 
@@ -75,9 +67,7 @@ class QueryBuilder:
         return self
         
     def add_title(self, title:str) -> Self:
-        if not isinstance(title, str):
-            raise TypeError(f"`title` should be a string, got {type(title)}")
-        
+        "Adds the title of the program for the model to verify that a website isn't off-topic"        
         if not self.program_context:
             self._add_program_context_boiler()
 
@@ -85,9 +75,7 @@ class QueryBuilder:
         return self
 
     def add_provider(self, provider:str) -> Self:
-        if not isinstance(provider, str):
-            raise TypeError(f"`provider` should be a string, got {type(provider)}")
-        
+        "Adds the provider of the program for the model to verify that a website isn't off-topic"
         if not self.program_context:
             self._add_program_context_boiler()
 
@@ -95,9 +83,7 @@ class QueryBuilder:
         return self
 
     def add_description(self, description:str) -> Self:
-        if not isinstance(description, str):
-            raise TypeError(f"`description` should be a string, got {type(description)}")
-
+        "Adds the description of the program for the model to verify that a website isn't off-topic"
         if not self.program_context:
             self._add_program_context_boiler()
 
@@ -106,9 +92,6 @@ class QueryBuilder:
     
     def add_webpage_contents(self, contents:str) -> Self:
         "Adds the webpage contents for the model to collect data from"
-        if not isinstance(contents, str):
-            raise TypeError(f"`contents` should be a string, got {type(contents)}")
-        
         if not self.webpage_contents:
             # The below method calls another method that sets the webpage_contents instance variable
             self._add_webpage_contents_boiler()

@@ -1,5 +1,5 @@
 
-from typing import *
+from typing import Literal, Optional, Union
 from pydantic import BaseModel, ConfigDict
 from abc import ABC
 

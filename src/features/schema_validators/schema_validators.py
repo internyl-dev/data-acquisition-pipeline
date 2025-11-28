@@ -4,7 +4,13 @@ from .base_schema_validator import SchemaValidatorStrat
 from src.models import Fields, BaseSchemaSection, RootSchema
 
 from abc import ABC, abstractmethod
-from src.models import RootSchema, Fields
+from src.models import Fields, RootSchema
+from src.models.schema_models import Overview, \
+                                     Eligibility, \
+                                     Dates, \
+                                     Locations, \
+                                     Costs, \
+                                     Contact
 
 class OverviewValidator(SchemaValidatorStrat):
     def validate(self, schema: RootSchema, return_str: bool = False) -> list[Fields] | list[str]:
@@ -24,8 +30,8 @@ class OverviewValidator(SchemaValidatorStrat):
 class EligibilityValidator(SchemaValidatorStrat):
     def validate(self, schema: RootSchema, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
-        eligibility = schema.eligibility
-        eligibility_missing = (
+        eligibility: Eligibility = schema.eligibility
+        eligibility_missing: bool = (
             "not provided" in eligibility.eligibility.grades
             and eligibility.eligibility.age.minimum == eligibility.eligibility.age.maximum
             and eligibility.eligibility.age.minimum == "not provided"
@@ -37,7 +43,7 @@ class EligibilityValidator(SchemaValidatorStrat):
     def validate_dict(self, schema: dict, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
         eligibility = schema["eligibility"]
-        eligibility_missing = (
+        eligibility_missing: bool = (
             "not provided" in eligibility["eligibility"]["grades"]
             and list(eligibility["eligibility"]["age"].values()) == ["not provided", "not provided"]
         )
@@ -49,12 +55,12 @@ class EligibilityValidator(SchemaValidatorStrat):
 class DatesValidator(SchemaValidatorStrat):
     def validate(self, schema: RootSchema, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
-        dates = schema.dates
-        any_dates_missing = any(
+        dates: Dates = schema.dates
+        any_dates_missing: bool = any(
             deadline.date == "not provided" and deadline.rolling_basis != True 
             for deadline in dates.deadlines
         )
-        application_deadline_missing = not any(
+        application_deadline_missing: bool = not any(
             deadline.priority == "high" 
             for deadline in dates.deadlines
         )
@@ -65,7 +71,7 @@ class DatesValidator(SchemaValidatorStrat):
     def validate_dict(self, schema: dict, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
         dates = schema["dates"]
-        any_dates_missing = any(
+        any_dates_missing: bool = any(
             deadline["date"] == "not provided" and deadline["rolling_basis"] != True 
             for deadline in dates["deadlines"]
         )
@@ -81,8 +87,8 @@ class DatesValidator(SchemaValidatorStrat):
 class LocationsValidator(SchemaValidatorStrat):
     def validate(self, schema: RootSchema, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
-        locations = schema.locations
-        any_virtual_unknown = any(
+        locations: Locations = schema.locations
+        any_virtual_unknown: bool = any(
             site.virtual == "not provided" 
             for site in locations.locations
         )
@@ -93,7 +99,7 @@ class LocationsValidator(SchemaValidatorStrat):
     def validate_dict(self, schema: dict, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
         locations = schema["locations"]
-        any_virtual_unknown = any(
+        any_virtual_unknown: bool = any(
             site["virtual"] == "not provided" 
             for site in locations["locations"]
         )
@@ -105,8 +111,8 @@ class LocationsValidator(SchemaValidatorStrat):
 class CostsValidator(SchemaValidatorStrat):
     def validate(self, schema: RootSchema, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
-        costs = schema.costs
-        any_free_unknown = any(
+        costs: Costs = schema.costs
+        any_free_unknown: bool = any(
             plan.free == "not provided" 
             for plan in costs.costs
         )
@@ -117,7 +123,7 @@ class CostsValidator(SchemaValidatorStrat):
     def validate_dict(self, schema: dict, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
         costs = schema["costs"]
-        any_free_unknown = any(
+        any_free_unknown: bool = any(
             plan["free"] == "not provided" 
             for plan in costs["costs"]
         )
@@ -129,8 +135,8 @@ class CostsValidator(SchemaValidatorStrat):
 class ContactValidator(SchemaValidatorStrat):
     def validate(self, schema: RootSchema, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
-        contact = schema.contact
-        contact_unknown = [contact.contact.email, contact.contact.phone] == [
+        contact: Contact = schema.contact
+        contact_unknown: bool = [contact.contact.email, contact.contact.phone] == [
             "not provided", 
             "not provided"
         ]
@@ -141,7 +147,7 @@ class ContactValidator(SchemaValidatorStrat):
     def validate_dict(self, schema: dict, return_str: bool = False) -> list[Fields] | list[str]:
         target_info = []
         contact = schema["contact"]
-        contact_unknown = list(contact["contact"].values()) == [
+        contact_unknown: bool = list(contact["contact"].values()) == [
             "not provided", 
             "not provided"
         ]
@@ -151,8 +157,7 @@ class ContactValidator(SchemaValidatorStrat):
 
 
 class SchemaValidationEngine:
-    def __init__(self, return_str: bool = False):
-        self.return_str = return_str
+    def __init__(self) -> None:
         self.validators = [
             OverviewValidator,
             EligibilityValidator,
@@ -163,20 +168,17 @@ class SchemaValidationEngine:
         ]
     
     def validate(
-        self, 
-        strat: type[SchemaValidatorStrat], 
-        schema: dict | BaseSchemaSection
-    ) -> list[str] | list[Fields]:
+        self, strat: type[SchemaValidatorStrat], schema: dict | BaseSchemaSection, return_str: bool = False) -> list[str] | list[Fields]:
         """Returns the field as an enum or string in a list if the field is missing needed information"""
-        validator = strat()
+        validator: SchemaValidatorStrat = strat()
         
         if isinstance(schema, RootSchema):
-            return validator.validate(schema, return_str=self.return_str)
+            return validator.validate(schema, return_str=return_str)
         else:
             assert isinstance(schema, dict)
-            return validator.validate_dict(schema, return_str=self.return_str)
+            return validator.validate_dict(schema, return_str=return_str)
     
-    def validate_all(self, schema: dict | BaseSchemaSection) -> list[Fields] | list[str]:
+    def validate_all(self, schema: dict | BaseSchemaSection, return_str: bool = False) -> list[Fields] | list[str]:
         """Returns a list of all the enums/strings of all the fields that have missing needed information"""
         target_info = []
         
@@ -184,9 +186,9 @@ class SchemaValidationEngine:
             validator = validator_class()
             
             if isinstance(schema, BaseSchemaSection):
-                info = validator.validate(schema, return_str=self.return_str)
+                info = validator.validate(schema, return_str=return_str)
             else:
-                info = validator.validate_dict(schema, return_str=self.return_str)
+                info = validator.validate_dict(schema, return_str=return_str)
             
             target_info.extend(info)
         
@@ -199,5 +201,5 @@ if __name__ == "__main__":
     validator = SchemaValidationEngine()
     print(validator.validate_all(root))
     
-    str_validator = SchemaValidationEngine(return_str=True)
+    str_validator = SchemaValidationEngine()
     print(str_validator.validate_all(root))
