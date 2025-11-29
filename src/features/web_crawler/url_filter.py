@@ -2,10 +2,11 @@
 import re
 
 from .url_keywords import LINK_KEYWORDS
+from .url_extractor import AnchorText, Href
 from src.models import Fields
 
 class URLFilter:
-    def filter(self, urls:dict, target_info:str|Fields):
+    def filter(self, urls:dict[AnchorText, Href], target_info:str|Fields) -> dict[AnchorText, Href]:
         """
         Filters all anchor elements based on their content and URL with keywords corresponding to the required info.
 
@@ -19,7 +20,7 @@ class URLFilter:
         if isinstance(target_info, Fields):
             target_info = target_info.value
             
-        filtered_links = {}
+        filtered_links: dict[AnchorText, Href] = {}
         for href in urls:
             for keyword in LINK_KEYWORDS[target_info]:
 
@@ -30,11 +31,11 @@ class URLFilter:
         return filtered_links
 
 if __name__ == "__main__":
-    urls = {
-        "https://example.com/apply": "Apply Now",
-        "https://example.com/fees": "Tuition and Fees",
-        "https://example.com/about": "About Us",
-        "https://example.com/contact": "Contact Information"
-    }
+    urls: dict[AnchorText, Href] = {
+        AnchorText("https://example.com/apply"): Href("Apply Now"),
+        AnchorText("https://example.com/fees"): Href("Tuition and Fees"),
+        AnchorText("https://example.com/about"): Href("About Us"),
+        AnchorText("https://example.com/contact"): Href("Contact Information"),
+    } # BIG ISSUE?????
     url_filter = URLFilter()
     print(url_filter.filter(urls, "costs"))

@@ -1,11 +1,12 @@
 
 import re
+from typing import Optional
 
 class URLProcessor:
     @staticmethod
-    def is_url(s:str):
+    def is_url(s:str) -> bool:
         """
-        Finds and returns all links found in a string
+        Checks whether a string looks like a URL. Handles full, scheme-relative, relative, and bare domain URLs.
 
         Args:
             contents (str): The text to search links from
@@ -30,7 +31,7 @@ class URLProcessor:
         return bool(pattern.match(s))
 
     @staticmethod
-    def process_url(base_url:str, url:str):
+    def process_url(base_url:str, url:str) -> Optional[str]:
         """
         Takes the contents of any HREF assuming that the HREF is an absolute or relative path to a webpage and turns it in an absolute link.
 

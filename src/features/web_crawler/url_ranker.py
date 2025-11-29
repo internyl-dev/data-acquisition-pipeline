@@ -2,7 +2,7 @@
 import re
 
 class URLRanker:
-    def weight_urls_keywords(self, response:dict, all_links:dict):
+    def weigh_urls_keywords(self, response:dict, all_links:dict):
         weighed_queue = {}
 
         # Split title based on the delimitters ' ' and '-'
