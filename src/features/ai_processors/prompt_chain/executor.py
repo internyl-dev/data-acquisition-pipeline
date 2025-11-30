@@ -1,7 +1,9 @@
 
 import json
 
-from langchain.output_parsers import PydanticOutputParser, ChatPromptValue, BaseMessage
+from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompt_values import ChatPromptValue
+from langchain_core.messages.base import BaseMessage
 from typing import Optional
 
 from src.features.content_summarizers import ContentTrimmer
@@ -77,16 +79,28 @@ class PromptChainExecutor:
 
             self.log.update("PROMPT EXECUTOR: Sending request...")
             response: BaseMessage = azure_chat_openai.invoke(prompt_value)
-            self.log.update(json.loads(response.content))
+            raw_content = response.content
+
+            # Normalize response.content -> string
+            if isinstance(raw_content, str):
+                content_str = raw_content
+            else:
+                # Convert parts (list) to a single text string
+                content_str = "".join(
+                    part.get("text", "") if isinstance(part, dict) else str(part)
+                    for part in raw_content
+                )
+
+            self.log.update(content_str)
 
             try:
-                parsed_schema = parser.parse(response.content)
+                parsed_schema = parser.parse(content_str)
                 self.log.update("PROMPT EXECUTOR: Successfully parsed to schema object")
                 #self.log.update(parsed_schema)
             
             except Exception as e:
                 self.log.update(f"PROMPT EXECUTOR: Parsing error: {e}")
-                response_dict = json.loads(response.content)
+                response_dict = json.loads(content_str)
                 self.log.update(response_dict)
                 raise e
             

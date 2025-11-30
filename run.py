@@ -12,4 +12,4 @@ pp(Instance.schema.model_dump())
 
 # Call the function to add it to the 'products' collection
 db = FirebaseClient.get_instance()
-db.save("programs-display", Instance.schema.model_dump(), set_index=True)
+db.save("demo-history", Instance.schema.model_dump(), set_index=True)

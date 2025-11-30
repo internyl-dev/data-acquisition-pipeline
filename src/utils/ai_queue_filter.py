@@ -1,9 +1,8 @@
 
-from langchain_openai import AzureChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, ConfigDict
-from typing import List, Self
+from typing import List, Self, Optional
 
 from src.models import Queue
 from src.features.ai_processors import azure_chat_openai
@@ -36,7 +35,7 @@ Don't be afraid to remove every link from the queue if it's obvious none of them
 """
 
 class AIQueueFilter:
-    def __init__(self, log=None):
+    def __init__(self, log: Optional[Logger]=None) -> None:
         self.log = log or Logger(log_mode=False)
 
         self.parser = PydanticOutputParser(pydantic_object=ResponseModel)
