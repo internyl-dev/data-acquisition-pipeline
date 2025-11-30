@@ -40,7 +40,7 @@ class Queue:
     def get(self, strat: Optional[type[QueueStrategy]] = None) -> Optional[QueueItem]:
         """
         Returns an item from the queue given a strategy
-        along with its deletion.
+        along with its deletion
         """
         strat = strat or self.default_strat
         strat_obj: QueueStrategy[QueueItem] = strat(self.items)

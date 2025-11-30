@@ -32,10 +32,10 @@ class URLFilter:
 
 if __name__ == "__main__":
     urls: dict[AnchorText, Href] = {
-        AnchorText("https://example.com/apply"): Href("Apply Now"),
-        AnchorText("https://example.com/fees"): Href("Tuition and Fees"),
-        AnchorText("https://example.com/about"): Href("About Us"),
-        AnchorText("https://example.com/contact"): Href("Contact Information"),
+        AnchorText("Apply Now"): Href("https://example.com/apply"),
+        AnchorText("Tuition and Fees"): Href("https://example.com/fees"),
+        AnchorText("About Us"): Href("https://example.com/about"),
+        AnchorText("Contact Information"): Href("https://example.com/contact")
     } # BIG ISSUE?????
     url_filter = URLFilter()
     print(url_filter.filter(urls, "costs"))

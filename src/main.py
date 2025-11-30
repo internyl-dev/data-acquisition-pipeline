@@ -95,7 +95,6 @@ class Main:
                     q_item: QueueItem | None = self.queue.find(new_queue_item)
                     if q_item and target_info not in q_item.target_fields:
                         q_item.target_fields.append(target_info)
-                        self.queue.replace(q_item)
 
                 else:
                     self.queue.add(new_queue_item)
