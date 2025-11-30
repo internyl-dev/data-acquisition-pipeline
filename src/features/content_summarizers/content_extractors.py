@@ -4,7 +4,8 @@ import re
 from .base_content_extractor import ContentExtractor
 
 class EmailExtractor(ContentExtractor):
-    def extract(self, s:str):
+    @staticmethod
+    def extract(s:str) -> list[str]:
         """
         Finds and returns all emails found in a string
 
@@ -17,7 +18,8 @@ class EmailExtractor(ContentExtractor):
         return re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", s, re.I)
 
 class PhoneNumberExtractor(ContentExtractor):
-    def extract(self, s:str):
+    @staticmethod
+    def extract(s:str) -> list[str]:
         """
         Finds and returns all phone numbers found in a string
 
@@ -43,7 +45,8 @@ class PhoneNumberExtractor(ContentExtractor):
         return re.findall(phone_pattern, s)
 
 class DateExtractor(ContentExtractor):
-    def extract(self, s:str):
+    @staticmethod
+    def extract(s:str) -> list[str]:
         """
         Finds and returns all dates found in a string
 
@@ -68,7 +71,8 @@ class DateExtractor(ContentExtractor):
         return re.findall(date_pattern, s)
     
 class MoneyExtractor(ContentExtractor):
-    def extract(self, s:str):
+    @staticmethod
+    def extract(s:str) -> list[str]:
         """
         Finds and returns all monetary amounts found in a string
 

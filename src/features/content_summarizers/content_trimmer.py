@@ -2,6 +2,8 @@
 import re
 import inflect
 from bs4 import BeautifulSoup
+from bs4.element import PageElement
+from typing import Optional
 
 from .content_keywords import CONTENT_KEYWORDS
 from .content_extractors import EmailExtractor, PhoneNumberExtractor, DateExtractor, MoneyExtractor
@@ -9,11 +11,14 @@ from .content_extractors import EmailExtractor, PhoneNumberExtractor, DateExtrac
 from src.models import Fields
 
 class ContentTrimmer:
-    def __init__(self, content_keywords=CONTENT_KEYWORDS,
-                 email_extractor=None, 
-                 phone_number_extractor=None,
-                 date_extractor=None,
-                 money_extractor=None):
+    def __init__(
+        self, content_keywords=CONTENT_KEYWORDS,
+        email_extractor: Optional[EmailExtractor] = None, 
+        phone_number_extractor: Optional[PhoneNumberExtractor] = None,
+        date_extractor: Optional[DateExtractor] = None,
+        money_extractor: Optional[MoneyExtractor] = None
+        ) -> None:
+
         self.content_keywords = content_keywords
         self.p = inflect.engine()
 
@@ -32,16 +37,16 @@ class ContentTrimmer:
         Returns:
             value (str): Regex pattern to match the singular and plural word
         """
-        plural = self.p.plural(singular)
+        plural: str = self.p.plural(singular) # type: ignore[arg-type]
 
-        singular_escaped = re.escape(singular)
-        plural_escaped = re.escape(plural)
+        singular_escaped: str = re.escape(singular)
+        plural_escaped: str = re.escape(plural)
 
-        pattern = rf'\b({singular_escaped}|{plural_escaped})\b'
+        pattern: str = rf'\b({singular_escaped}|{plural_escaped})\b'
 
         return pattern
 
-    def _truncont(self, contents:BeautifulSoup|str, keywords:list, area:int=1) -> str:
+    def _truncont(self, contents:BeautifulSoup | str, keywords: list[str], area: int=1) -> str:
         """
         Truncates any string separated by new lines and returns some amount of lines 
         above and below lines containing keywords in either the singular or plural form.
@@ -56,32 +61,31 @@ class ContentTrimmer:
         """
         # Extracts content from BeautifulSoup object and splits into individual lines
         if isinstance(contents, BeautifulSoup):
-            contents = contents.get_text().split('\n')
+            lines: list[str] = contents.get_text().split('\n')
         else:
-            contents = contents.split('\n')
-        contents = list(filter(None, contents)) # After splitting, '' may appear. This removes that.
+            lines: list[str] = contents.split('\n')
+        lines = list(filter(None, lines)) # remove all ''
 
         # Find all indices of lines where keywords appear
-        matching_indices = set()
+        matching_indices: set[int] = set()
         
-        for i, line in enumerate(contents):
+        for i, line in enumerate(lines):
             for keyword in keywords:
-                # Non case-sensitive keyword can be followed by 1 s but not any other letter
                 if re.search(self._get_plural_regex(keyword), line, re.I):
                     matching_indices.add(i)
-                    break  # No need to check other keywords for this line
+                    break
 
         # Expand to include surrounding lines (area above and below)
-        expanded_indices = set()
+        expanded_indices: set[int] = set()
         for idx in matching_indices:
             for offset in range(-area, area + 1):
-                target_idx = idx + offset
-                if 0 <= target_idx < len(contents):  # Ensure index is valid
+                target_idx: int = idx + offset
+                if 0 <= target_idx < len(lines):
                     expanded_indices.add(target_idx)
 
         # Sort indices and extract corresponding lines
-        sorted_indices = sorted(expanded_indices)
-        fincont = [contents[idx] for idx in sorted_indices]
+        sorted_indices: list[int] = sorted(expanded_indices)
+        fincont: list[str] = [lines[idx] for idx in sorted_indices]
         
         return '\n'.join(fincont)
     

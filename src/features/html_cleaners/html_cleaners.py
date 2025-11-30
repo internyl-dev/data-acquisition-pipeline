@@ -103,4 +103,4 @@ class HTMLWhitespaceCleaner(HTMLCleaner):
         contents = re.sub(r'\n\s*\n+', '\n', contents)
         contents = re.sub(r'^\s+|\s+$', '', contents, flags=re.MULTILINE)
 
-        return BeautifulSoup(contents, )
+        return BeautifulSoup(contents, "html.parser")

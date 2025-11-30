@@ -1,5 +1,5 @@
 
-CONTENT_KEYWORDS = {
+CONTENT_KEYWORDS: dict[str, list[str]] = {
     'overview': [
         'overview',
 

@@ -64,10 +64,10 @@ class Main:
         self.url_filter = url_filter or URLFilter()
         self.ai_queue_filter = ai_queue_filter or AIQueueFilter(self.log)
 
-    def scrape(self, url):
+    def scrape(self, url) -> str:
         self.log.update("TRIMMER: Scraping...")
         try:
-            raw_html = asyncio.run(self.scraper.scrape_url(url))
+            raw_html: str = asyncio.run(self.scraper.scrape_url(url))
         except Exception as e:
             print(e)
             raise e
@@ -81,7 +81,9 @@ class Main:
             filtered_urls = self.url_filter.filter(new_urls, target_info)
             self.log.update(f"Filtering for {target_info}:", filtered_urls)
             for filtered_url in filtered_urls.values():
-                filtered_url = self.url_processor.process_url(queue_item.url, filtered_url)
+                filtered_url: str | None = self.url_processor.process_url(queue_item.url, filtered_url)
+                if not filtered_url:
+                    continue
                 new_queue_item = QueueItem(filtered_url, target_fields=[target_info])
 
                 # Skip links we've already visited
@@ -90,7 +92,7 @@ class Main:
 
                 # If link is in queue, add info if it was not already there
                 elif self.queue.is_in(new_queue_item):
-                    q_item = self.queue.find(new_queue_item)
+                    q_item: QueueItem | None = self.queue.find(new_queue_item)
                     if q_item and target_info not in q_item.target_fields:
                         q_item.target_fields.append(target_info)
                         self.queue.replace(q_item)
@@ -99,7 +101,7 @@ class Main:
                     self.queue.add(new_queue_item)
 
     def run(self, url:str):
-        target_info = self.validator.validate_all(self.schema)
+        target_info: list[Fields] | list[str] = self.validator.validate_all(self.schema)
         queue_item = QueueItem(url, target_info)
         self.base_url = url
 
@@ -110,8 +112,8 @@ class Main:
 
     def r(self, queue_item:QueueItem, depth:int=3):
 
-        url = queue_item.url
-        all_target_info = queue_item.target_fields
+        url: str = queue_item.url
+        all_target_info: list[Fields] | list[str] = queue_item.target_fields
 
         # Guards
         if self.history.is_in(url):
@@ -135,12 +137,14 @@ class Main:
             self.log.update("No target info needed, returning...")
             return
         
-        raw_html = self.scrape(url)
+        raw_html: str = self.scrape(url)
         raw_soup = BeautifulSoup(raw_html, "html.parser")
-        soup = self.declutterer.clean(raw_soup)
-        contents = self.whitespace_cleaner.clean(soup)
+        soup: BeautifulSoup = self.declutterer.clean(raw_soup)
+        soup: BeautifulSoup = self.whitespace_cleaner.clean(soup)
+        contents: str = soup.get_text()
+        self.log.update(contents)
 
-        response = PromptChainExecutor(schema=self.schema, all_target_info=all_target_info, log=self.log).run(contents)
+        response: RootSchema = PromptChainExecutor(schema=self.schema, all_target_info=all_target_info, log=self.log).run(contents)
         self.log.update(response)
         assert isinstance(response, RootSchema) # REMOVE LATER WHEN TYPE CHECKING IS FIXED
         self.schema = response

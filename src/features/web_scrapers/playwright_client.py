@@ -8,7 +8,7 @@ class PlaywrightClient:
     """
     The Playwright client to scrape the contents from a webpage given a URL
     """
-    def __init__(self, headless=True):
+    def __init__(self, headless=True) -> None:
         self.headless = headless
 
     async def scrape_url(self, url) -> str:
