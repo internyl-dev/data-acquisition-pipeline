@@ -15,7 +15,7 @@ INSTRUCTIONS = {
     "overview": """
 You are given a partially filled JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. Your task is to update only the 'overview' section using information from the text after WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only: {"unrelated_website": true}
 
 Core rules:
 - Do NOT infer or guess.
@@ -47,12 +47,10 @@ Fill:
 In the schema there may be a "link" key; that is for us only so don't add it.
 """,
 
-
-
     "eligibility": """
 You are updating the 'eligibility' section of the JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA, using only data from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only: {"unrelated_website": true}
 
 Core rules:
 - Use only explicitly stated information.
@@ -87,12 +85,10 @@ Fill:
 Be literal and precise — convert 9th, 10th, 11th, and 12th grade to freshman, sophomore, junior, and senior respectively.
 """,
 
-
-
     "dates": """
 You are updating the 'dates' section of the JSON schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using content from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only: {"unrelated_website": true}
 
 Core rules:
 - Never infer or estimate.
@@ -125,7 +121,7 @@ Expected output format:
 
 Update deadlines:
 - Add each deadline as a separate object.
-- Fields: "name", "priority" ("high" only for the most important application deadline, rank other priorities yourself based on context), "term", "date", "rolling_basis", "time".
+- Fields: "name", "priority" ("high" only for the most important application deadline, rank other priorities yourself based on context), "term", "date", "rolling_basis", and "time".
 
 Update program dates:
 - Include term (Summer, Winter, Spring, Fall), start, and end dates only if both are clearly stated.
@@ -135,17 +131,15 @@ Update program dates:
 
 Update duration_weeks:
 - Use a number only if the duration is clearly stated (e.g., "6-week program").
-- Otherwise, use "not provided".
+- Otherwise "not provided".
 
-Do not infer dates or duration from vague phrases or context.
+Do not infer dates or duration from vague phrases like "a few weeks".
 """,
-
-
 
     "locations": """
 Update the 'locations' section of the schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using data from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only: {"unrelated_website": true}
 
 Core rules:
 - Use only explicitly mentioned info.
@@ -173,12 +167,10 @@ Fill:
 Include only the main residential/instructional site — ignore travel destinations or event locations.
 """,
 
-
-
     "costs": """
 You are updating the 'costs' section of the schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using content from WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only: {"unrelated_website": true}
 
 Core rules:
 - Use only direct mentions — do not assume or calculate.
@@ -206,11 +198,11 @@ Expected output format:
 Cost objects (tuition, fees, etc.):
 - "free": Set to true only if explicitly stated. If true, set "lowest" and "highest" to null.
 - "lowest"/"highest": Use numbers only if directly stated; if not stated and not free, leave as "not provided".
-- "financial_aid_available": Use true, false, or "not provided".
+- "financial_aid_available": true, false, or "not provided".
 
 Stipend:
-- "available": true only if explicitly mentioned, false if clearly absent.
-- "amount": Use number if stated. If "available" is false, set to null.
+- "available": true only if explicitly mentioned, false if clearly absent, "not provided" if unclear.
+- "amount": Use numeric value only if stated. If "available" is false, set amount to null.
   - If rate is given, for example hourly or per session, write the amount and the rate (eg. 16.50 per hour, 200 per week, 100 per session)
   - If the amount for the entire program can be calculated explicitly given the rate and amount of sessions, calculate that and return it (eg. 100 per session, 7 sessions -> 700)
 
@@ -218,12 +210,10 @@ Include each cost type as a separate object if multiple are mentioned.
 Also keep in mind that some websites offer a variety of internships as one single internship. If multiple internships are found, assume that this is the case and have the lowest cost be the price of the internship with the lowest cost and the highest cost be the price of the internship with the highest cost.
 """,
 
-
-
     "contact": """
 Update the 'contact' section of the schema shown after ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA using data found in WEBPAGE CONTENTS START HERE.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only: {"unrelated_website": true}
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only: {"unrelated_website": true}
 
 Core rules:
 - Only include contact info shown directly in the webpage content.
@@ -241,19 +231,17 @@ Expected output format:
 }
 
 Fill:
-- "email": Must be a complete and valid address (e.g., contact@school.edu).
+- "email": Must be a complete email address found directly in the content.
 - "phone": Must be clearly formatted and complete (123-456-7890).
 
 Do not copy from social links or headers unless the contact is fully visible in the content. 
 """,
 
-
-
     "all": """
 You are given a partially filled JSON schema after the line: ADD NEWLY FOUND INFORMATION ONTO THIS SCHEMA. 
 Extract structured data from the HTML/plaintext that follows WEBPAGE CONTENTS START HERE and update the JSON schema accordingly.
 
-If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, return only:
+If the webpage content does NOT relate to or mention the program described in TARGET PROGRAM INFORMATION, or if the website is unreachable or returns a "page not found" error, return only:
 {"unrelated_website": true}
 
 —————
@@ -341,12 +329,7 @@ Never extract contact info from headers, footers, or social links unless it appe
 FINAL NOTE:
 Return only the updated JSON. Never explain your reasoning. Preserve the schema structure. Only change fields if the corresponding information appears in the provided text.
 
-THIS IS AN EXAMPLE INPUT AND OUTPUT
-INPUT:
-Summer High School Internships\nThe Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school (in grades 10 and 11) or obtaining their High School Equivalency degree and who, on the application deadline date, either reside in or attend a high school or home school in New York, New Jersey, or Connecticut. This program allows students to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.\nThis internship experience is not limited to young people who have a passion for art! The High School Internship Program allows you to connect one-on-one and in small cohorts with Museum professionals in a number of related fields, including editorial, marketing, social media, education, scientific research, conservation, and more. During your time at The Met, you have the chance to find the intersection of your interests as you gain insights from peers and professionals.\nWe are committed to addressing diversity in arts, museums, and creative careers. We are seeking interns with diverse backgrounds and interests who are excited about sharing their skills and ideas. Students who are members of groups that are historically underrepresented in these fields are strongly encouraged to apply.\nWe are committed to considering all qualified individuals and ensuring that everyone can participate in this application process. If you need additional accommodations or an alternative format to successfully submit your application, please contact highschoolinterns@metmuseum.org.\nUpon completion of the program, High School Interns receive a stipend commensurate with New York State minimum wage law.\nSee our visitor guidelines.\nSummer 2025\nApplication available: Monday, February 3, 2025\nApplication deadline: Friday, March 7, 2025, 6 pm ET (interview notification: by Friday, April 18, 2025)\nProgram dates:\nAccepted intern and family reception, Saturday, June 21, 2025, 1–3 pm: A two-hour session for interns and at least one parent or guardian to become familiar with the program and its staff and review requirements and expectations.\nBootcamp, Wednesday, July 2, 2025, 9 am–5 pm: Eight-hour training and workshop to prepare interns for the internship.\nDepartmental placement: No less than forty hours (10 to 20 hours per week) observing, assisting, and being mentored by a staff member in one of the Museum's departments. The placement is determined by the intern's interests and the department's internship project. The majority of departmental placement hours take place from Monday, July 7 through Friday, August 8, 2025, 9 am–1 pm and 1–6 pm. Learn more about departmental placements.\nTeen Fridays: Friday, July 18, and Friday, August 1, 2025, 4:30–6:30 pm\nCareer Labs, Thursday, July 17, and Thursday, July 31, 2025, 1:30–3:30 pm: Two two-hour sessions with curators, educators, designers, conservators, and other staff who discuss their professional paths and roles at the Museum and lead workshops during which interns try out an element of their work.\nBiweekly check-ins: One-hour biweekly sessions for interns to meet as a cohort, learn from each other's experiences, meet with mentors, and develop their career readiness skills.\nFinal event and celebration: Friday, August 8, 2025, 5:30–7:30 pm: Interns develop an event to share the insights, experiences, and skills gained through their departmental placements with fellow interns and invited guests.\nHow to Apply\nApply now\nApplication deadline: Friday, March 7, 2025, 6 pm ET\nInterview notification by Friday, April 18, 2025\nThe application requires:\nA completed application form\nShort essay responses\nOne letter of recommendation from a teacher, school administrator, or another adult who is not related to you who can write about why you would be a great intern for The Met. Good choices might be your coach or mentor, the leader of an after-school program or activity you participate in, or a supervisor from a previous internship or work experience.\nInterviews\nInterviews are required for finalists only. If you are selected as a finalist, we will contact you using the email you used to submit your application. It is your responsibility to ensure that your email address is accurate.\nYou will be asked to indicate which time and day you are available for an in-person interview. We will send a confirmation email with your interview date and additional information.\nPlease be sure to check your spam folders for communications from The Met.\nApply now\nPlease note: Your recommendation letters must be submitted by the application deadline. We will not accept any applications, application materials, or recommendations after the deadline.\nPlease refer to our Frequently Asked Questions for additional information.\nWant to stay connected and learn more about upcoming programs and events? Follow @metteens on Facebook, Instagram, and X, formerly known as Twitter.
-
-EXPECTED OUTPUT:
-{"overview":{"title":"High School Internship Program","provider":"The Met","description":"The Met High School Internship Program offers paid opportunities for students who are two to three years from graduating high school to connect with art, museums, and creative professionals as they develop professional skills, network, and gain work experience.","link":"not provided","subject":[],"tags":["paid"]},"eligibility":{"requirements":{"essay_required":true,"recommendation_required":true,"transcript_required":"not provided","other":["Must be in grades 10 or 11 or obtaining their High School Equivalency degree","Must reside in or attend a high school or home school in New York, New Jersey, or Connecticut on the application deadline date","Interviews are required for finalists only"]},"eligibility":{"grades":["Sophomore","Junior"],"age":{"minimum":"not provided","maximum":"not provided"}}},"dates":{"deadlines":[{"name":"Application Deadline","priority":"high","term":"Summer 2025","date":"03-07-2025","rolling_basis":false,"time":"6:00 PM"},{"name":"Interview Notification","priority":"medium","term":"Summer 2025","date":"04-18-2025","rolling_basis":false,"time":"not provided"}],"dates":[{"term":"Summer 2025","start":"07-07-2025","end":"08-08-2025"}],"duration_weeks":"not provided"},"locations":{"locations":[{"virtual":false,"state":"not provided","city":"not provided","address":"not provided"}]},"costs":{"costs":[],"stipend":{"available":true,"amount":null}},"contact":{"contact":{"email":"highschoolinterns@metmuseum.org","phone":"not provided"}}}
+For any website that is unreachable, missing, or returns a "page not found" error (or any HTTP 4xx/5xx error), treat it as an unrelated website and return: {"unrelated_website": true}.
 """,
 
     "evaluate_links": """
@@ -354,7 +337,6 @@ You are given a dictionary after the line: QUEUE HERE.
 You are also given a partially filled JSON schema after PROGRAM INFO.
 The dictionary represents a queue to go through links for web crawling purposes needed to find information to completely fill the partially filled JSON schema.
 Your job is to go through the the link contents (key) and the URLs (value) and remove all the links that likely wouldn't contain the needed information.
-You will send the dictionary back which will be parsed into a dictionary that will represent the links that likely have information related to the program in the partially filled JSON schema.
 
 Core rules:
 - If a link looks like it points to the admissions for a university, and not the program, it can be removed.
@@ -364,6 +346,7 @@ Core rules:
   3. PDF
   4. Completely unrelated website (unless it is a Google Form)
   It can be removed.
+- If a website is unreachable, missing, or returns a "page not found" error, remove it from the queue.
 
 Don't add any links and be very conservative with the link removing process. 
 Don't be afraid to remove every link from the queue if it's obvious none of them are needed, in that case return an empty dictionary.

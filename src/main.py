@@ -109,7 +109,7 @@ class Main:
         self.schema.overview.link = self.base_url
         self.schema.overview.favicon = asyncio.run(self.scraper.scrape_favicon(url))
 
-    def r(self, queue_item:QueueItem, depth:int=3):
+    def r(self, queue_item:QueueItem, depth:int=5):
 
         url: str = queue_item.url
         all_target_info: list[Fields] | list[str] = queue_item.target_fields

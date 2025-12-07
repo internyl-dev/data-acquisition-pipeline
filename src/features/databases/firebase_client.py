@@ -5,14 +5,14 @@ import dotenv
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-from typing import Self
+from typing import Self, Optional
 
 from src.models import BaseSchemaSection
 
 dotenv.load_dotenv()
 
 class FirebaseClient:
-    __shared_instance = None
+    __shared_instance:Optional[Self] = None
 
     def __init__(self):
 
@@ -34,6 +34,7 @@ class FirebaseClient:
     def get_instance(cls) -> Self:
         if not cls.__shared_instance:
             cls()
+        assert cls.__shared_instance
         return cls.__shared_instance
         
     def _get_name_index(self, collection_path:str, document:dict|BaseSchemaSection):
@@ -41,8 +42,6 @@ class FirebaseClient:
             link = document["overview"]["link"].replace("/", "\\")
         elif isinstance(document, BaseSchemaSection):
             link = document.overview.link.replace("/", "\\")
-        else:
-            raise "Document is neither a dictionary nor a BaseSchemaSection"
 
         documents = self.get_all_data(collection_path)
         documents_with_link = [doc for doc in documents if link in doc]
@@ -79,6 +78,7 @@ class FirebaseClient:
 
         return {document.id: document.to_dict() for document in documents}
 
-    def delete_by_id(self, id:str):
-        pass
+    def delete_by_id(self, collection_path:str, id:str):
+        collection_ref = self.database.collection(collection_path)
+        collection_ref.document(id).delete()
 
