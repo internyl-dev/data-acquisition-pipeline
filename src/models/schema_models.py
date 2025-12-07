@@ -113,6 +113,7 @@ class Contact(BaseSchemaSection):
 # METADATA #
 #==========#
 class Metadata(BaseSchemaSection):
+    date_added: str = ""
     time_added: str = ""
     favicon: str = ""
     total_input_tokens: int = 0
