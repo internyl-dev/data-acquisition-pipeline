@@ -1,7 +1,12 @@
 
 from abc import ABC, abstractmethod
+from typing import TypeVar, Generic
 
-class SchemaCleaner(ABC):
+from src.models import BaseSchemaSection
+
+T = TypeVar("T", bound=BaseSchemaSection)
+
+class SchemaCleaner(ABC, Generic[T]):
     @abstractmethod
-    def clean(self, schema:dict):
+    def clean(self, section: dict | T) -> None:
         "Standardizes the data in a schema"
