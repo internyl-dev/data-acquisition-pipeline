@@ -8,7 +8,7 @@ class Case(ABC):
     call: Callable[..., Any]
     args: list=field(default_factory=list)
     kwargs: dict=field(default_factory=dict)
-    outp: any=None
+    outp: Any=None
 
     def __post_init__(self):
         if self.args and self.kwargs:
