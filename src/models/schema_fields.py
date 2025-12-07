@@ -8,6 +8,7 @@ class Fields(Enum):
     LOCATIONS = "locations"
     COSTS = "costs"
     CONTACT = "contact"
+    METADATA = "metadata"
     ALL = "all"
 
 if __name__ == "__main__":

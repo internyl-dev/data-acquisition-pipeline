@@ -3,7 +3,7 @@ import logging
 import datetime
 import os
 import sys
-from pprint import pp, pprint
+from pprint import pprint
 
 from .base_observer import Observer
 

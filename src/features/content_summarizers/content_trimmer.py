@@ -2,7 +2,6 @@
 import re
 import inflect
 from bs4 import BeautifulSoup
-from bs4.element import PageElement
 from typing import Optional
 
 from .content_keywords import CONTENT_KEYWORDS

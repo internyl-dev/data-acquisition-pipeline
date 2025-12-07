@@ -1,5 +1,4 @@
 
-from pydantic import BaseModel
 from dataclasses import dataclass
 from .queue_strategies import QueueStrategy, FIFO, FILO
 from .schema_fields import Fields

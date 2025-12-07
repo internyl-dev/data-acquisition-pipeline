@@ -1,10 +1,9 @@
 
 import asyncio
 from bs4 import BeautifulSoup
-from pprint import pp
 from typing import Optional
 
-from .models import History, FIFO, FILO, Queue, RootSchema, QueueItem, Fields
+from .models import History, Queue, RootSchema, QueueItem, Fields
 
 from .features.web_scrapers import PlaywrightClient
 from .features.html_cleaners import HTMLDeclutterer, HTMLWhitespaceCleaner
@@ -107,7 +106,7 @@ class Main:
         self.r(queue_item)
 
         self.schema.overview.link = self.base_url
-        self.schema.overview.favicon = asyncio.run(self.scraper.scrape_favicon(url))
+        self.schema.metadata.favicon = asyncio.run(self.scraper.scrape_favicon(url))
 
     def r(self, queue_item:QueueItem, depth:int=5):
 

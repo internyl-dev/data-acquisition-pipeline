@@ -1,9 +1,7 @@
 
-from typing import List
 from .base_schema_validator import SchemaValidatorStrat
 from src.models import Fields, BaseSchemaSection, RootSchema
 
-from abc import ABC, abstractmethod
 from src.models import Fields, RootSchema
 from src.models.schema_models import Overview, \
                                      Eligibility, \

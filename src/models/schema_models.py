@@ -24,7 +24,6 @@ class Overview(BaseSchemaSection):
     provider: str = "not provided"
     description: str = "not provided"
     link: str = "not provided"
-    favicon: str = "not provided"
     subject: list[str] = ["not provided"]
     tags: list[str] = ["not provided"]
 
@@ -110,6 +109,18 @@ class ContactOptions(BaseSchemaSection):
 class Contact(BaseSchemaSection):
     contact: ContactOptions = ContactOptions()
 
+#==========#
+# METADATA #
+#==========#
+class Metadata(BaseSchemaSection):
+    time_added: str = ""
+    favicon: str = ""
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+
+    def get_total_tokens(self) -> int:
+        return self.total_input_tokens + self.total_output_tokens
+
 #=============#
 # ROOT SCHEMA #
 #=============#
@@ -120,6 +131,7 @@ class RootSchema(BaseSchemaSection):
     locations: Locations = Locations()
     costs: Costs = Costs()
     contact: Contact = Contact()
+    metadata: Metadata = Metadata()
 
     def get(self, section):
         if section == Fields.OVERVIEW:
@@ -132,41 +144,48 @@ class RootSchema(BaseSchemaSection):
             return self.costs
         if section == Fields.CONTACT:
             return self.contact
+        if section == Fields.METADATA:
+            return self.metadata
 
 class SchemaModelFactory:
     "Returns the the class representation of a section of the schema"
     @staticmethod
-    def make_overview():
+    def make_overview() -> type[Overview]:
         "Returns the Overview class"
         return Overview
     
     @staticmethod
-    def make_eligibility():
+    def make_eligibility() -> type[Eligibility]:
         "Returns the Eligibility class"
         return Eligibility
     
     @staticmethod
-    def make_dates():
+    def make_dates() -> type[Dates]:
         "Returns the Dates class"
         return Dates
     
     @staticmethod
-    def make_locations():
+    def make_locations() -> type[Locations]:
         "Returns the Locations class"
         return Locations
     
     @staticmethod
-    def make_costs():
+    def make_costs() -> type[Costs]:
         "Returns the Costs class"
         return Costs
 
     @staticmethod
-    def make_contact():
+    def make_contact() -> type[Contact]:
         "Returns the Contact class"
         return Contact
+
+    @staticmethod
+    def make_metadata() -> type[Metadata]:
+        "Returns the Metadata class"
+        return Metadata
     
     @staticmethod 
-    def make_root():
+    def make_root() -> type[RootSchema]:
         "Returns the RootSchema class"
         return RootSchema
     
@@ -182,6 +201,7 @@ class SchemaModelFactory:
             "locations": self.make_locations,
             "costs": self.make_costs,
             "contact": self.make_contact,
+            "metadata": self.make_metadata,
             "all": self.make_root
         }
 

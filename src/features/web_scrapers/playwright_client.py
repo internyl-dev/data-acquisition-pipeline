@@ -1,7 +1,6 @@
 
 from playwright.async_api import async_playwright
 from urllib.parse import urljoin
-from typing import Optional
 import asyncio
 
 class PlaywrightClient:

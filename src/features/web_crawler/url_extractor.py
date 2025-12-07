@@ -1,7 +1,6 @@
 
 from bs4 import BeautifulSoup
 from bs4.element import ResultSet, NavigableString, PageElement, Tag, AttributeValueList
-from collections.abc import Sequence
 from typing import Optional, NewType
 
 from .url_processor import URLProcessor
