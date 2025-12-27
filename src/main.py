@@ -2,6 +2,7 @@
 import asyncio
 from bs4 import BeautifulSoup
 from typing import Optional
+from datetime import datetime
 
 from .models import History, Queue, RootSchema, QueueItem, Fields
 
@@ -107,6 +108,8 @@ class Main:
 
         self.schema.overview.link = self.base_url
         self.schema.metadata.favicon = asyncio.run(self.scraper.scrape_favicon(url))
+        self.schema.metadata.date_added = str(datetime.today().date())
+        self.schema.metadata.time_added = str(datetime.now().time())
 
     def r(self, queue_item:QueueItem, depth:int=5):
 
@@ -144,7 +147,6 @@ class Main:
 
         response: RootSchema = PromptChainExecutor(schema=self.schema, all_target_info=all_target_info, log=self.log).run(contents)
         self.log.update(response)
-        assert isinstance(response, RootSchema) # REMOVE LATER WHEN TYPE CHECKING IS FIXED
         self.schema = response
 
         all_target_info = self.validator.validate_all(self.schema)

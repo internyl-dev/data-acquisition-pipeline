@@ -42,7 +42,8 @@ class PromptChainExecutor:
         self.all_target_info = all_target_info or self.validator.validate_all(self.schema, return_str=True)
         self.prompt_builder = PromptChainPromptBuilder(schema)
     
-    def _all_info_needed(self, target_info:list) -> bool:
+    @staticmethod
+    def _all_info_needed(target_info:list) -> bool:
         "The clause for when to activate bulk extraction"
         return len(target_info) == 6
     
@@ -50,6 +51,16 @@ class PromptChainExecutor:
         "Builds the prompt to pass into the chat model"
         return self.prompt_builder.build(target_info, contents)
 
+    @staticmethod
+    def _get_token_counts(response:BaseMessage) -> tuple[int, int]:
+        if hasattr(response, 'response_metadata') and 'token_usage' in response.response_metadata:
+            usage = response.response_metadata['token_usage']
+            prompt_tokens = usage.get('prompt_tokens', 0)
+            completion_tokens = usage.get('completion_tokens', 0)
+        
+            return prompt_tokens, completion_tokens
+        return 0, 0
+            
     def run(self, contents:str) -> RootSchema:
         """Loops through the target info at each iteration 
         makeing a prompt object, passing it into a chat, 
@@ -80,6 +91,11 @@ class PromptChainExecutor:
             self.log.update("PROMPT EXECUTOR: Sending request...")
             response: BaseMessage = azure_chat_openai.invoke(prompt_value)
             raw_content = response.content
+
+            # Add token counts
+            prompt_tokens, completion_tokens = self._get_token_counts(response)
+            self.schema.metadata.total_input_tokens+=prompt_tokens
+            self.schema.metadata.total_output_tokens+=completion_tokens
 
             # Normalize response.content -> string
             if isinstance(raw_content, str):
