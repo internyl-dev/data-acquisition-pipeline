@@ -1,12 +1,14 @@
 
 from src.main import Main
 from src.features.databases import FirebaseClient
+from typing import Optional
+from copy import deepcopy
 
 class Refresher:
-    def __init__(self) -> None:
-        self.pipeline = Main()
+    def __init__(self, pipeline: Optional[Main] = None) -> None:
+        self.pipeline = pipeline or Main()
         self.db = FirebaseClient.get_instance()
-        self.all_data = {}
+        self._all_data = {}
 
     def run(self, link:str, hard:bool=False) -> None:
         """
@@ -32,29 +34,29 @@ class Refresher:
         return False
 
     def __get_all_data(self, collection_path:str) -> None:
-        self.all_data[collection_path] = self.db.get_all_data(collection_path)
+        self._all_data[collection_path] = self.db.get_all_data(collection_path)
 
-    def _get_latest_entry(self, collection_path:str, link:str) -> dict:
+    def _get_latest_entry(self, collection_path:str, link:str) -> dict[str, dict]:
         # If the database hasn't been read yet, do so
-        if not self.all_data:
+        if not self._all_data:
             self.__get_all_data(collection_path)
 
         # Documents end with a "-" followed by a number representing the version of the doc
-        # Find all data with the same link as the link provided and add it to a list
-        documents_with_link: list[dict] = []
-        for doc in self.all_data[collection_path]:
-            if link == '-'.join(doc.split('-')[:-1]):
-                documents_with_link.append({doc: self.all_data[collection_path][doc]})
+        # Find all data with the same link as the link provided
+        docs_with_link: dict[int, dict] = {}
+        for doc in self._all_data[collection_path]:
+            id = '-'.join(doc.split('-')[:-1])
+            ver = doc.split('-')[-1]
+            if link == id:
+                # {version: {id: data}}
+                docs_with_link[ver] = {id: self._all_data[collection_path][doc]}
 
-        docs: dict[int, dict] = {}
-        for doc in documents_with_link:
-            id: str = list(doc.keys())[0]
-            ver: int = int(id.split("-")[-1])
-            docs[ver] = doc
-        max_ver: int = max(docs.keys())
-        return docs[max_ver]
+        max_ver: int = max(docs_with_link.keys())
+        return docs_with_link[max_ver]
 
     def _soft_run(self, link:str) -> None:
+        
+        self.pipeline.schema.overview
         pass
 
     def _hard_run(self, link:str) -> None:
