@@ -4,13 +4,14 @@ import json
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompt_values import ChatPromptValue
 from langchain_core.messages.base import BaseMessage
+from langchain_core.prompts import ChatPromptTemplate
 from typing import Optional
 
 from src.features.content_summarizers import ContentTrimmer
 from src.features.logger import Logger
 from src.features.ai_processors import azure_chat_openai
 from src.features.schema_validators import SchemaValidationEngine
-from .prompt_builder import PromptChainPromptBuilder, ChatPromptTemplate
+from .prompt_builder import PromptChainPromptBuilder
 from src.models import Fields, RootSchema, SchemaModelFactory
 
 class PromptChainExecutor:

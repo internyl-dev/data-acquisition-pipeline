@@ -1,10 +1,10 @@
 
 import json
+from langchain_core.prompts import ChatPromptTemplate
 
 from ..prompt_constructors import SystemInstructionsBuilder, \
                                   QueryBuilder, \
                                   ChatPromptTemplateBuilder, \
-                                  ChatPromptTemplate, \
                                   SystemInstructions, \
                                   Query
 from src.models import RootSchema, Fields

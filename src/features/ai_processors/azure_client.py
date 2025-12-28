@@ -1,15 +1,7 @@
 
 import os
 from dotenv import load_dotenv
-from typing import Optional
 from langchain_openai import AzureChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
-
-from src.models import SchemaModelFactory
-from src.models import Fields
-from .prompt_constructors.instructions import INSTRUCTIONS
-
 
 load_dotenv()
 
@@ -21,25 +13,3 @@ azure_chat_openai = AzureChatOpenAI(
     timeout=None,
     max_retries=2
 )
-
-def create_chat_prompt_template(required_info:str|Fields, fac: Optional[SchemaModelFactory] = None) -> ChatPromptTemplate:
-    "Creates a `ChatPromptTemplate` object that which can be placed into a chat object when it is invoked"
-    if isinstance(required_info, Fields):
-        required_info=required_info.value
-    factory: SchemaModelFactory = fac or SchemaModelFactory()
-    model = factory.make(required_info)
-    parser = PydanticOutputParser(pydantic_object=model)
-    prompt: ChatPromptTemplate = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """
-                {instructions}
-                Wrap the output in this format and provide no other text\n{format_instructions}
-                """,
-            ),
-            ("human", "{query}"),
-        ]
-    ).partial(format_instructions=parser.get_format_instructions(), instructions=INSTRUCTIONS[required_info])
-
-    return prompt
