@@ -12,7 +12,7 @@ from .features.schema_validators import SchemaValidationEngine
 from .features.content_summarizers import ContentTrimmer, EmailExtractor, PhoneNumberExtractor, DateExtractor
 from .features.ai_processors.prompt_chain import PromptChainExecutor
 from .features.web_crawler import URLExtractor, URLProcessor, URLRanker, URLFilter
-from .features.logger import Logger
+from .logging import Logger
 
 from .utils import minimize_required_info, AIQueueFilter
 

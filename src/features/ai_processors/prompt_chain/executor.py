@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from typing import Optional
 
 from src.features.content_summarizers import ContentTrimmer
-from src.features.logger import Logger
+from src.logging import Logger
 from src.features.ai_processors import azure_chat_openai
 from src.features.schema_validators import SchemaValidationEngine
 from .prompt_builder import PromptChainPromptBuilder

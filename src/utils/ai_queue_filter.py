@@ -6,7 +6,7 @@ from typing import List, Self, Optional
 
 from src.models import Queue
 from src.features.ai_processors import azure_chat_openai
-from src.features.logger import Logger
+from src.logging import Logger
 
 class BaseModelConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
@@ -36,7 +36,7 @@ Don't be afraid to remove every link from the queue if it's obvious none of them
 
 class AIQueueFilter:
     def __init__(self, log: Optional[Logger]=None) -> None:
-        self.log = log or Logger(log_mode=False)
+        self.log = log or Logger(enabled=False)
 
         self.parser = PydanticOutputParser(pydantic_object=ResponseModel)
         self.prompt = ChatPromptTemplate.from_messages(
