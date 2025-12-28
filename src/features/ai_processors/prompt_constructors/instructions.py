@@ -1,5 +1,5 @@
 
-from src.features.databases import FirebaseClient
+from src.io import FirebaseClient
 
 def get_all_subjects(client:FirebaseClient):
     data = client.get_all_data("programs-display")

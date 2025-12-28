@@ -2,7 +2,7 @@
 from pprint import pp
 
 from src.main import Main
-from src.features.databases import FirebaseClient
+from src.io import FirebaseClient
 
 Pipeline = Main(log_mode=True)
 
