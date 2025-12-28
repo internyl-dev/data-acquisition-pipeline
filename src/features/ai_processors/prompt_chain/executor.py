@@ -36,7 +36,7 @@ class PromptChainExecutor:
 
         self.trimmer = trimmer or ContentTrimmer()
         self.factory = factory or SchemaModelFactory()
-        self.log = log or Logger(log_mode=False)
+        self.log = log or Logger(enabled=False)
         self.validator = validator or SchemaValidationEngine()
 
         self.schema = schema

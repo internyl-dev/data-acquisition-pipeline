@@ -2,121 +2,155 @@
 import logging
 import datetime
 import os
-import sys
-from pprint import pprint
+from pprint import pprint, pformat
 
 from .base_observer import Observer
 
 class Observable:
-    def __init__(self):
+    def __init__(self) -> None:
         self.observers = []
     
-    def register(self, *args:Observer):
+    def register(self, *args:Observer) -> None:
         for observer in args:
             self.observers.append(observer)
 
-    def update(self, *args, level=None):
+    def update(self, *args, level=None) -> None:
         for observer in self.observers:
             observer.update(*args, level=level)
 
 class Logger(Observer):
-    def __init__(self, log_mode):
+    def __init__(self, enabled:bool = True, level=logging.INFO) -> None:
+        self._enabled = enabled
 
         self.LOGS_DIR_PATH = "logs"
-
-        self.log_mode = log_mode
-
-        self.logger = logging.getLogger('Internyl')
-        self.logger.setLevel(logging.DEBUG)
-
-    def create_logging_files(self):
-        """
-        Sets up the logging files if log mode was turned on when setting up the instance.
-        """
-        if not self.log_mode:
-            return
-        
-        if os.path.isdir(self.LOGS_DIR_PATH):
-            self.logger.info(f"Path '{self.LOGS_DIR_PATH}' does not exist. Attempting to create directory...")
-        
-        try:
-            os.makedirs(self.LOGS_DIR_PATH, exist_ok=True)
-            self.logger.info(f"Either path '{self.LOGS_DIR_PATH} exists or it was created.\n"
-                             "Either way this message indicates that the logging system is functional thusfar.")
-        except OSError as e:
-            self.logger.critical(f"Error creating directory '{self.LOGS_DIR_PATH}': {e}\nExiting program...")
-            sys.exit()
-
-        # Create datetime folder
         time_now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        current_dir_path = f'{self.LOGS_DIR_PATH}/{time_now}'
-        os.mkdir(current_dir_path)
+        self.CURRENT_DIR_PATH = f"{self.LOGS_DIR_PATH}/{time_now}"
 
-        if not self.logger.handlers:
-            formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s')
+        self.logger = logging.getLogger(__name__)
+        self.api_logger = logging.getLogger("__api_transaction__")
+        self.setup(level)
 
-            # Debug file handler
-            debug_file_handler=logging.FileHandler(f"{current_dir_path}/debug.txt")
-            debug_file_handler.setLevel(logging.DEBUG)
-            debug_file_handler.setFormatter(formatter)
-
-            # Warning file handler
-            warning_file_handler=logging.FileHandler(f"{current_dir_path}/warnings.txt")
-            warning_file_handler.setLevel(logging.WARNING)
-            warning_file_handler.setFormatter(formatter)
-
-            self.logger.addHandler(debug_file_handler)
-            self.logger.addHandler(warning_file_handler)
-
-        # API Log
-        self.api_log = open(f"{current_dir_path}/api_transaction.txt", 'a')
-
-    def apply_conditional_logging(self):
+    def setup(self, level) -> None:
         """
-        Creates and applies a wrapper to every single `logging` method to write the output into a logging file
-        and `pp` the message into the terminal.
+        Sets up in the specified order:
+        1. Basic configurations
+        2. File setup/creation
+        3. File handlers
         """
-        if not hasattr(self, 'logger'):
+        print("setting up...")
+        logging.basicConfig(level=level)
+        self._setup_files()
+
+        debug_file_handler = logging.FileHandler(f"{self.CURRENT_DIR_PATH}/debug.txt")
+        debug_file_handler.setLevel(logging.DEBUG)
+        warning_file_handler = logging.FileHandler(f"{self.CURRENT_DIR_PATH}/warnings.txt")
+        warning_file_handler.setLevel(logging.WARNING)
+        info_file_handler = logging.FileHandler(f"{self.CURRENT_DIR_PATH}/info.txt")
+        info_file_handler.setLevel(logging.INFO)
+        api_log_handler = logging.FileHandler(f"{self.CURRENT_DIR_PATH}/api_log.txt")
+        api_log_handler.setLevel(logging.NOTSET)
+
+        formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s")
+        api_formatter = logging.Formatter("[%(asctime)s]: %(message)s")
+
+        debug_file_handler.setFormatter(formatter)
+        warning_file_handler.setFormatter(formatter)
+        info_file_handler.setFormatter(formatter)
+        api_log_handler.setFormatter(api_formatter)
+
+        self.logger.addHandler(debug_file_handler)
+        self.logger.addHandler(warning_file_handler)
+        self.logger.addHandler(info_file_handler)
+        self.api_logger.addHandler(api_log_handler)
+
+    def _setup_files(self) -> None:
+        os.makedirs(self.CURRENT_DIR_PATH, exist_ok=True)
+
+    def toggle(self) -> bool:
+        self._enabled = not self._enabled
+        if self._enabled: self._setup_files()
+        return self._enabled
+
+    def enable(self) -> None:
+        self._enabled = True
+        self._setup_files()
+    
+    def disable(self) -> None:
+        self._enabled = False
+
+    @staticmethod
+    def __iterlog(method, *args) -> None:
+        for msg in args:
+            method(msg)
+            pprint(msg)
+
+    def update(self, *args, level=None) -> None:
+        if not self._enabled:
             return
+
+        print("doing thing")
             
-        def __log_mode_guard(func):
-            def wrapper(*args, **kwargs):
-                if not self.log_mode:
-                    return
-                
-                if kwargs.get("message", False):
-                    message = kwargs["message"]
-                
-                if args:
-                    message = args[0]
+        match level:
+            case logging.DEBUG:
+                self.__iterlog(self.logger.debug, *args)
+            case logging.INFO:
+                self.__iterlog(self.logger.info, *args)
+            case logging.WARNING:
+                self.__iterlog(self.logger.warning, *args)
+            case logging.ERROR:
+                self.__iterlog(self.logger.error, *args)
+            case logging.CRITICAL:
+                self.__iterlog(self.logger.critical, *args)
+            case _:
+                self.__iterlog(self.logger.info, *args)  # fallback
+                print("falling back twin")
 
-                func(message)
-                pprint(message)
-                print()
-                return
-                
-            return wrapper
+    def update_api(self, d: dict) -> None:
+        self.api_logger.info(pformat(d))
 
-        self.logger.debug = __log_mode_guard(self.logger.debug)
-        self.logger.info = __log_mode_guard(self.logger.info)
-        self.logger.warning = __log_mode_guard(self.logger.warning)
-        self.logger.error = __log_mode_guard(self.logger.error)
-        self.logger.critical = __log_mode_guard(self.logger.critical)
+if __name__ == "__main__":
+    log = Logger()
+    log.update("test")
 
-    def update(self, *args, level=None):
-        def __iterlog(method):
-            for msg in args:
-                method(msg)
+    test_dict = test_data = {
+    "users": [
+            {"id": 1, "name": "Alice", "roles": ["admin", "editor"], "active": True},
+            {"id": 2, "name": "Bob", "roles": ["viewer"], "active": False},
+            {"id": 3, "name": "Charlie", "roles": ["editor", "viewer"], "active": True},
+        ],
+        "settings": {
+            "theme": "dark",
+            "notifications": {"email": True, "sms": False, "push": True},
+            "languages": ["en", "fr", "es"],
+        },
+        "projects": {
+            "project1": {
+                "name": "Apollo",
+                "status": "active",
+                "tasks": [
+                    {"task_id": 101, "title": "Design UI", "completed": False},
+                    {"task_id": 102, "title": "Setup backend", "completed": True},
+                ],
+            },
+            "project2": {
+                "name": "Zeus",
+                "status": "completed",
+                "tasks": [
+                    {"task_id": 201, "title": "Research", "completed": True},
+                    {"task_id": 202, "title": "Prototype", "completed": True},
+                ],
+            },
+        },
+        "metadata": {
+            "created_at": "2025-12-28T13:00:00",
+            "updated_at": "2025-12-28T14:30:00",
+            "tags": ["urgent", "high-priority", "client-facing"],
+        },
+        "logs": [
+            {"level": "INFO", "message": "System started", "timestamp": "2025-12-28T13:01:00"},
+            {"level": "WARNING", "message": "Low disk space", "timestamp": "2025-12-28T13:15:00"},
+            {"level": "ERROR", "message": "Failed to connect to DB", "timestamp": "2025-12-28T13:45:00"},
+        ],
+    }
 
-        if not level:
-            __iterlog(self.logger.info)
-        elif level==logging.DEBUG:
-            __iterlog(self.logger.debug)
-        elif level==logging.INFO:
-            __iterlog(self.logger.info)
-        elif level==logging.WARNING:
-            __iterlog(self.logger.warning)
-        elif level==logging.ERROR:
-            __iterlog(self.logger.error)
-        elif level==logging.CRITICAL:
-            __iterlog(self.logger.critical)
+    log.update_api(test_dict)

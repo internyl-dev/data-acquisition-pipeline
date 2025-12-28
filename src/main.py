@@ -46,9 +46,7 @@ class Main:
         self.queue = queue or Queue()
         self.schema = schema or RootSchema()
 
-        self.log = log or Logger(log_mode=self.log_mode)
-        self.log.create_logging_files()
-        self.log.apply_conditional_logging()
+        self.log = log or Logger(enabled=self.log_mode)
 
         self.scraper = scraper or PlaywrightClient()
         self.declutterer = declutterer or HTMLDeclutterer(remove_header=False, remove_nav=False)
