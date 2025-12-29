@@ -144,7 +144,7 @@ if __name__ == "__main__":
     print(r._get_latest_entry("programs-display", "https:\\\\opportunitynetwork.org\\apply\\"))
     print(r._get_latest_entry("programs-display", "https:\\\\sumac.spcs.stanford.edu\\sumac-online-program"))
     """
-    links = list(r.get_all_latest_entries("programs-display").keys())[0:10]
+    links = list(r.get_all_latest_entries("programs-display").keys())[0:-1]
     for link in links:
         r.run(link)
         r.clear()

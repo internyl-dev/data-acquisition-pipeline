@@ -64,11 +64,16 @@ class Main:
 
     def scrape(self, url) -> str:
         self.log.update("TRIMMER: Scraping...")
-        try:
-            raw_html: str = asyncio.run(self.scraper.scrape_url(url))
-        except Exception as e:
-            print(e)
-            raise e
+        raw_html=""
+        for i in range(3):
+            try:
+                raw_html: str = asyncio.run(self.scraper.scrape_url(url))
+                break
+            except Exception as e:
+                self.log.update(e, level=self.log.WARNING)
+                self.log.update(f"Trying again: {i}")
+                if i>3:
+                    raise e
 
         return raw_html
     
