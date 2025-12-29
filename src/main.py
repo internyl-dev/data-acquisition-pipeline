@@ -1,7 +1,7 @@
 
 import asyncio
 from bs4 import BeautifulSoup
-from typing import Optional
+from typing import Optional, Self
 from datetime import datetime
 
 from .models import History, Queue, RootSchema, QueueItem, Fields
@@ -168,7 +168,7 @@ class Main:
         
         return
 
-    def clear(self) -> tuple[RootSchema, Queue, History]:
+    def clear(self) -> Self:
         # Implementation until RootSchema clear method is implemented
         schema = self.schema
         self.schema = RootSchema()
@@ -176,4 +176,4 @@ class Main:
         #schema = self.schema.clear()
         queue = self.queue.clear()
         history = self.history.clear()
-        return schema, queue, history
+        return type(self)(schema=schema, queue=queue, history=history)
