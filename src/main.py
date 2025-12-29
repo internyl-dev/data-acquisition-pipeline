@@ -102,14 +102,14 @@ class Main:
         queue_item = QueueItem(url, target_info)
         self.base_url = url
 
-        self.r(queue_item)
+        self._run(queue_item)
 
         self.schema.overview.link = self.base_url
         self.schema.metadata.favicon = asyncio.run(self.scraper.scrape_favicon(url))
         self.schema.metadata.date_added = str(datetime.today().date())
         self.schema.metadata.time_added = str(datetime.now().time())
 
-    def r(self, queue_item:QueueItem, depth:int=5):
+    def _run(self, queue_item:QueueItem, depth:int=5):
 
         url: str = queue_item.url
         all_target_info: list[Fields] | list[str] = queue_item.target_fields
@@ -164,6 +164,6 @@ class Main:
             next_queue_item = self.queue.get()
             if not next_queue_item:
                 break
-            self.r(next_queue_item, depth=depth-1)
+            self._run(next_queue_item, depth=depth-1)
         
         return

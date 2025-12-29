@@ -6,7 +6,7 @@ class History:
     items and check whether or not the item has been stored. 
     """
     def __init__(self) -> None:
-        self.items = set()
+        self.items: set[str] = set()
 
     def add(self, item) -> None:
         """
@@ -42,6 +42,12 @@ class History:
             item (any): The item to check.
         """
         return (item in self.items)
+
+    def clear(self) -> set[str]:
+        "Deletes all items from history and returns a copy of the cleared items"
+        items: set[str] = self.items.copy()
+        self.items.clear()
+        return items
     
 if __name__ == "__main__":
     history = History()

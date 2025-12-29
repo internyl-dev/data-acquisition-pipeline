@@ -99,6 +99,12 @@ class Queue:
             if item.url not in urls:
                 self.items.remove(item)
 
+    def clear(self) -> list[QueueItem]:
+        "Deletes all items from the queue and returns a copy of the cleared items"
+        items: list[QueueItem] = self.items.copy()
+        self.items.clear()
+        return items
+
 if __name__ == "__main__":
 
     item1 = QueueItem(url="first", target_fields=["item"])

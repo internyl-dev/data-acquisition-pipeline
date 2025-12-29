@@ -11,7 +11,7 @@ db: FirebaseClient = FirebaseClient.get_instance()
 # Input link to extract info from
 links = db.get_all_data("scrape-queue")
 #Pipeline.run(list(links.values())[0]["url"])
-Pipeline.run("https://k12stem.engineering.nyu.edu/programs/c-path")
+Pipeline.run("https://k12stem.engineering.nyu.edu/programs/cs4cs")
 schema = Pipeline.schema.model_dump()
 pp(schema)
 

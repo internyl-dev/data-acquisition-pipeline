@@ -1,5 +1,5 @@
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Union, Self
 from pydantic import BaseModel, ConfigDict
 from abc import ABC
 
@@ -134,7 +134,9 @@ class RootSchema(BaseSchemaSection):
     contact: Contact = Contact()
     metadata: Metadata = Metadata()
 
-    def get(self, section: Fields):
+    def get(self, section: Fields | str):
+        if isinstance(section, str):
+            section = Fields[section.upper()]
         match section:
             case Fields.OVERVIEW:
                 return self.overview
@@ -150,6 +152,9 @@ class RootSchema(BaseSchemaSection):
                 return self.contact
             case Fields.METADATA:
                 return self.metadata
+
+    def clear(self) -> Self:
+        raise NotImplementedError("`clear` method has not been implemented for `RootSchema`")
 
 class SchemaModelFactory:
     "Returns the the class representation of a section of the schema"
@@ -219,3 +224,4 @@ if __name__ == "__main__":
 
     print(isinstance(RootSchema().overview, BaseSchemaSection))
     print(root_schema.model_dump())
+    print(root_schema.get("overview"))
