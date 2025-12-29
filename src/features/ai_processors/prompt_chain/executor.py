@@ -13,6 +13,12 @@ from src.features.ai_processors import azure_chat_openai
 from src.features.schema_validators import SchemaValidationEngine
 from .prompt_builder import PromptChainPromptBuilder
 from src.models import Fields, RootSchema, SchemaModelFactory
+from src.models.schema_models import Overview, \
+                                     Eligibility, \
+                                     Dates, \
+                                     Locations, \
+                                     Costs, \
+                                     Contact \
 
 class PromptChainExecutor:
     """
@@ -53,7 +59,7 @@ class PromptChainExecutor:
         return self.prompt_builder.build(target_info, contents)
 
     @staticmethod
-    def _get_token_counts(response:BaseMessage) -> tuple[int, int]:
+    def __get_token_counts(response:BaseMessage) -> tuple[int, int]:
         if hasattr(response, 'response_metadata') and 'token_usage' in response.response_metadata:
             usage = response.response_metadata['token_usage']
             prompt_tokens = usage.get('prompt_tokens', 0)
@@ -61,6 +67,11 @@ class PromptChainExecutor:
         
             return prompt_tokens, completion_tokens
         return 0, 0
+
+    def _update_metadata(self, response) -> None:
+        prompt_tokens, completion_tokens = self.__get_token_counts(response)
+        self.schema.metadata.total_input_tokens+=prompt_tokens
+        self.schema.metadata.total_output_tokens+=completion_tokens
             
     def run(self, contents:str) -> RootSchema:
         """Loops through the target info at each iteration 
@@ -78,7 +89,7 @@ class PromptChainExecutor:
             self.log.update(f"PROMPT EXECUTOR: Creating prompt for {target_info}")
 
             if self._all_info_needed(self.all_target_info):
-                self.log.update("PROMPT EXECUTOR: Ignore previous log, bulk extraction activated. Creating prompt for ALL")
+                self.log.update("PROMPT EXECUTOR: Overriden, bulk extraction activated. Creating prompt for ALL")
                 target_info = "all"
             
             trimmed_contents: str = self.trimmer.truncate_contents(contents, target_info, 500, 1)
@@ -94,51 +105,62 @@ class PromptChainExecutor:
             raw_content = response.content
 
             # Add token counts
-            prompt_tokens, completion_tokens = self._get_token_counts(response)
-            self.schema.metadata.total_input_tokens+=prompt_tokens
-            self.schema.metadata.total_output_tokens+=completion_tokens
+            self._update_metadata(response)
 
-            # Normalize response.content -> string
-            if isinstance(raw_content, str):
-                content_str = raw_content
-            else:
-                # Convert parts (list) to a single text string
-                content_str = "".join(
-                    part.get("text", "") if isinstance(part, dict) else str(part)
-                    for part in raw_content
-                )
+            content_str = self._normalize_response(raw_content)
+            parsed_schema = self._parse_response(parser, content_str)
 
-            self.log.update(content_str)
-
-            try:
-                parsed_schema = parser.parse(content_str)
-                self.log.update("PROMPT EXECUTOR: Successfully parsed to schema object")
-                #self.log.update(parsed_schema)
-            
-            except Exception as e:
-                self.log.update(f"PROMPT EXECUTOR: Parsing error: {e}")
-                response_dict = json.loads(content_str)
-                self.log.update(response_dict)
-                raise e
-            
-            if len(self.all_target_info) == 6:
+            if isinstance(parsed_schema, RootSchema):
                 self.schema = parsed_schema
                 break
             else:
-                if target_info == Fields.OVERVIEW:
-                    self.schema.overview = parsed_schema
-                if target_info == Fields.ELIGIBILITY:
-                    self.schema.eligibility = parsed_schema
-                if target_info == Fields.DATES:
-                    self.schema.dates = parsed_schema
-                if target_info == Fields.COSTS:
-                    self.schema.costs = parsed_schema
-                if target_info == Fields.CONTACT:
-                    self.schema.contact = parsed_schema
+                self._update_schema_section(parsed_schema)
 
         return self.schema
+
+    def _normalize_response(self, raw_content) -> str:
+        # Normalize response.content -> string
+        if isinstance(raw_content, str):
+            content_str = raw_content
+        else:
+            # Convert parts (list) to a single text string
+            content_str = "".join(
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in raw_content
+            )
+
+        self.log.update_api(content_str)
+        return content_str
+
+    def _parse_response(self, parser: PydanticOutputParser, content_str: str) -> Contact | Costs | Dates | Eligibility | Locations | Overview | RootSchema:
+        try:
+            parsed_schema = parser.parse(content_str)
+            self.log.update("PROMPT EXECUTOR: Successfully parsed to schema object")
+            self.log.update_api(parsed_schema)
+            return parsed_schema
+        
+        except Exception as e:
+            self.log.update(f"PROMPT EXECUTOR: Parsing error: {e}", level=self.log.ERROR)
+            response_dict = json.loads(content_str)
+            self.log.update_api(response_dict)
+            raise e
+
+    def _update_schema_section(self, parsed_schema) -> None:
+        match parsed_schema:
+            case Overview():
+                self.schema.overview = parsed_schema
+            case Eligibility():
+                self.schema.eligibility = parsed_schema
+            case Dates():
+                self.schema.dates = parsed_schema
+            case Locations():
+                self.schema.locations = parsed_schema
+            case Costs():
+                self.schema.costs = parsed_schema
+            case Contact():
+                self.schema.contact = parsed_schema
     
-    
+
 if __name__ == "__main__":
     #chain = PromptChainExecutor()
     print("need thing")

@@ -30,6 +30,12 @@ class Logger(Observer):
         self.api_logger = logging.getLogger("__api_transaction__")
         self.setup(level)
 
+        self.DEBUG = logging.DEBUG
+        self.INFO = logging.INFO
+        self.WARNING = logging.WARNING
+        self.ERROR = logging.ERROR
+        self.CRITICAL = logging.CRITICAL
+
     def setup(self, level) -> None:
         """
         Sets up in the specified order:
@@ -37,7 +43,6 @@ class Logger(Observer):
         2. File setup/creation
         3. File handlers
         """
-        print("setting up...")
         logging.basicConfig(level=level)
         self._setup_files()
 
@@ -87,8 +92,6 @@ class Logger(Observer):
     def update(self, *args, level=None) -> None:
         if not self._enabled:
             return
-
-        print("doing thing")
             
         match level:
             case logging.DEBUG:
@@ -103,10 +106,9 @@ class Logger(Observer):
                 self.__iterlog(self.logger.critical, *args)
             case _:
                 self.__iterlog(self.logger.info, *args)  # fallback
-                print("falling back twin")
 
-    def update_api(self, d: dict) -> None:
-        self.api_logger.info(pformat(d))
+    def update_api(self, content: dict | str) -> None:
+        self.api_logger.info(pformat(content))
 
 if __name__ == "__main__":
     log = Logger()

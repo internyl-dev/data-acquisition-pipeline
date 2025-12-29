@@ -134,19 +134,22 @@ class RootSchema(BaseSchemaSection):
     contact: Contact = Contact()
     metadata: Metadata = Metadata()
 
-    def get(self, section):
-        if section == Fields.OVERVIEW:
-            return self.overview
-        if section == Fields.ELIGIBILITY:
-            return self.eligibility
-        if section == Fields.DATES:
-            return self.dates
-        if section == Fields.COSTS:
-            return self.costs
-        if section == Fields.CONTACT:
-            return self.contact
-        if section == Fields.METADATA:
-            return self.metadata
+    def get(self, section: Fields):
+        match section:
+            case Fields.OVERVIEW:
+                return self.overview
+            case Fields.ELIGIBILITY:
+                return self.eligibility
+            case Fields.DATES:
+                return self.dates
+            case Fields.LOCATIONS:
+                return self.locations
+            case Fields.COSTS:
+                return self.costs
+            case Fields.CONTACT:
+                return self.contact
+            case Fields.METADATA:
+                return self.metadata
 
 class SchemaModelFactory:
     "Returns the the class representation of a section of the schema"
