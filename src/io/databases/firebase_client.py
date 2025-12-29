@@ -73,8 +73,11 @@ class FirebaseClient:
     def set(self, id:str, document:dict|RootSchema):
         pass
 
-    def get_by_id(self, id:str):
-        pass
+    def get_by_id(self, collection_path: str, id:str) -> dict:
+        collection_ref = self.database.collection(collection_path)
+        doc = collection_ref.document(id).get()
+        data = doc.to_dict()
+        return data if data is not None else {}
 
     def get_all_data(self, collection_path:str)-> dict:
         collection_ref = self.database.collection(collection_path)
@@ -86,3 +89,11 @@ class FirebaseClient:
         collection_ref = self.database.collection(collection_path)
         collection_ref.document(id).delete()
 
+    def reindex(self, collection_path: str, old_id: str) -> None:
+        data = self.get_by_id(collection_path, old_id)
+        self.delete_by_id(collection_path, old_id)
+        self.save(collection_path, data, set_index=True)
+
+if __name__ == "__main__":
+    print(FirebaseClient.get_instance().get_by_id("programs-display", "0e9rDP8y6T5xNM3O2Xoj"))
+    FirebaseClient.get_instance().reindex("programs-display", "0e9rDP8y6T5xNM3O2Xoj")
