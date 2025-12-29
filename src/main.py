@@ -167,3 +167,13 @@ class Main:
             self._run(next_queue_item, depth=depth-1)
         
         return
+
+    def clear(self) -> tuple[RootSchema, Queue, History]:
+        # Implementation until RootSchema clear method is implemented
+        schema = self.schema
+        self.schema = RootSchema()
+
+        #schema = self.schema.clear()
+        queue = self.queue.clear()
+        history = self.history.clear()
+        return schema, queue, history

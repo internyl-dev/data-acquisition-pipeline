@@ -1,4 +1,7 @@
 
+from typing import Self
+from copy import deepcopy
+
 class History:
     """
     A container object that represents the history of the 
@@ -43,11 +46,11 @@ class History:
         """
         return (item in self.items)
 
-    def clear(self) -> set[str]:
+    def clear(self) -> Self:
         "Deletes all items from history and returns a copy of the cleared items"
-        items: set[str] = self.items.copy()
+        history = deepcopy(self)
         self.items.clear()
-        return items
+        return history
     
 if __name__ == "__main__":
     history = History()

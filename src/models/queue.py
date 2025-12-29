@@ -2,7 +2,8 @@
 from dataclasses import dataclass
 from .queue_strategies import QueueStrategy, FIFO, FILO
 from .schema_fields import Fields
-from typing import List, Optional
+from typing import List, Optional, Self
+from copy import deepcopy
 
 @dataclass
 class QueueItem:
@@ -99,11 +100,11 @@ class Queue:
             if item.url not in urls:
                 self.items.remove(item)
 
-    def clear(self) -> list[QueueItem]:
+    def clear(self) -> Self:
         "Deletes all items from the queue and returns a copy of the cleared items"
-        items: list[QueueItem] = self.items.copy()
+        queue = deepcopy(self)
         self.items.clear()
-        return items
+        return queue
 
 if __name__ == "__main__":
 
