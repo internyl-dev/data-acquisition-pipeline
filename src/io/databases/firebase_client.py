@@ -36,44 +36,71 @@ class FirebaseClient:
             cls()
         assert cls.__shared_instance
         return cls.__shared_instance
-        
-    def _get_name_index(self, collection_path:str, document:dict|RootSchema) -> str:
-        if isinstance(document, dict):
-            link = document["overview"]["link"].replace("/", "\\")
-        elif isinstance(document, RootSchema):
-            link = document.overview.link.replace("/", "\\")
 
-        documents = self.get_all_data(collection_path)
-        documents_with_link = [doc for doc in documents if link in doc]
+    @staticmethod
+    def _all_data_guard(collection_path: str, all_data: Optional[dict[str, dict]] = None) -> None:
+        if (collection_path=="") and (all_data is None):
+            raise ValueError("Either `collection_path` or `all_data` must be given, both empty")
+        
+    def _get_name_index(self, 
+                        collection_path: str, 
+                        document: Optional[dict | RootSchema] = None,
+                        link: Optional[str] = None,
+                        all_data: Optional[dict[str, dict]] = None) -> str:
+        """
+        
+        """
+        if not link:
+            if isinstance(document, dict):
+                link = document["overview"]["link"].replace("/", "\\")
+            elif isinstance(document, RootSchema):
+                link = document.overview.link.replace("/", "\\")
+
+        # Insure an id was given by at least the document or as an argument
+        if link is None:
+            raise ValueError("Either `document` or `link` must be given, both empty")
+
+        self._all_data_guard(collection_path, all_data)
+
+        documents = all_data or self.get_all_data(collection_path)
+        documents_with_link = [doc_id for doc_id in documents if self.link_in_id(doc_id, link)]
         
         if not documents_with_link:
             next_index = 0
         else:
-            indexes = [int(doc[-1]) for doc in documents_with_link]
-            next_index = max(indexes) + 1
+            indeces = [self.get_version_from_id(doc_id) for doc_id in documents_with_link]
+            next_index = max(indeces) + 1
         
         return f"{link}-{next_index}"
 
-    def save(self, collection_path:str, document:dict|RootSchema, set_index:bool=False) -> None:
-        try:
-            collection_ref = self.database.collection(collection_path)
+    def save(self, 
+             collection_path:str, 
+             document:dict|RootSchema, 
+             doc_id: Optional[str] = None, 
+             set_index:bool=False,
+             all_data: Optional[dict[str, dict]] = None) -> None:
+        """
+        
+        """
+        collection_ref = self.database.collection(collection_path)
 
-            if isinstance(document, RootSchema):
-                document = document.model_dump()
+        # Normalize
+        if isinstance(document, RootSchema):
+            document = document.model_dump()
 
-            if set_index:
-                document_name = self._get_name_index(collection_path, document)
-                collection_ref.document(document_name).set(document)
-            else:
-                update_item, doc_ref = collection_ref.add(document)
-
-        except Exception as e:
-            raise e
+        if set_index:
+            document_name = self._get_name_index(collection_path, document, doc_id, all_data)
+            collection_ref.document(document_name).set(document)
+        elif doc_id:
+            collection_ref.document(doc_id).set(document)
+        else:
+            update_item, doc_ref = collection_ref.add(document)
 
     def set(self, id:str, document:dict|RootSchema):
         pass
 
     def get_by_id(self, collection_path: str, doc_id:str) -> dict:
+        "Returns just the data of the given ID"
         collection_ref = self.database.collection(collection_path)
         doc = collection_ref.document(doc_id).get()
         data = doc.to_dict()
@@ -83,29 +110,35 @@ class FirebaseClient:
             raise ValueError(f"Data of id '{doc_id}' not found")
 
     def get_all_data(self, collection_path:str)-> dict:
+        ""
         collection_ref = self.database.collection(collection_path)
         documents = collection_ref.stream()
 
         return {document.id: document.to_dict() for document in documents}
 
     def delete_by_id(self, collection_path:str, doc_id:str) -> None:
+        ""
         collection_ref = self.database.collection(collection_path)
         collection_ref.document(doc_id).delete()
 
     def reindex(self, collection_path: str, old_id: str) -> None:
+        ""
         data = self.get_by_id(collection_path, old_id)
         self.delete_by_id(collection_path, old_id)
         self.save(collection_path, data, set_index=True)
 
     @staticmethod
     def get_link_from_id(doc_id: str) -> str:
+        ""
         return "-".join(doc_id.split("-")[:-1])
     
     @staticmethod
     def get_version_from_id(doc_id: str) -> int:
+        ""
         return int(doc_id.split("-")[-1])
 
     def link_in_id(self, doc_id: str, link: str) -> bool:
+        ""
         return self.get_link_from_id(doc_id) == link
 
     def get_latest_entry(self,  
@@ -117,8 +150,7 @@ class FirebaseClient:
         Returns:
             {id (str): data (dict)}
         """
-        if (collection_path=="") and (all_data is None):
-            raise ValueError("Either collection path or all_data must be given, both empty")
+        self._all_data_guard(collection_path, all_data)
 
         all_data = all_data or self.get_all_data(collection_path)
 
@@ -145,8 +177,7 @@ class FirebaseClient:
         Returns:
             {id (str): data (dict)}
         """
-        if (collection_path=="") and (all_data is None):
-            raise ValueError("Either collection path or all_data must be given, both empty")
+        self._all_data_guard(collection_path, all_data)
 
         all_data = all_data or self.get_all_data(collection_path)
 
@@ -159,13 +190,37 @@ class FirebaseClient:
         
         return all_latest_entries
 
+    def get_all_old_entries(self, 
+                            collection_path: str = "", 
+                            all_data: Optional[dict[str, dict]] = None) -> dict[str, dict]:
+        """
+        
+        """
+        self._all_data_guard(collection_path, all_data)
+        
+        all_data = all_data or self.get_all_data(collection_path)
+        all_latest_entries = self.get_all_latest_entries(all_data=all_data)
+
+        return {doc_id: all_data[doc_id] for doc_id in all_data if doc_id not in all_latest_entries}
+
+    def migrate(self, old_path, new_path, doc_id):
+        old_collection_ref = self.database.collection(old_path)
+        new_collection_ref = self.database.collection(new_path)
+
+        data = self.get_by_id(old_path, doc_id)
+        new_collection_ref.document(doc_id).set(data)
+        old_collection_ref.document(doc_id).delete()
+
+
 if __name__ == "__main__":
     #print(FirebaseClient.get_instance().get_by_id("programs-display", "0e9rDP8y6T5xNM3O2Xoj"))
     #FirebaseClient.get_instance().reindex("programs-display", "0e9rDP8y6T5xNM3O2Xoj")
-    print()
-    all_data = FirebaseClient.get_instance().get_all_data("demo-display")
-    print(all_data.keys())
-    print()
-    print(FirebaseClient.get_instance().get_latest_entry("https:\\\\www.kipr.org\\virtual", "demo-display").keys())
-    print()
-    print(FirebaseClient.get_instance().get_all_latest_entries(all_data=all_data).keys())
+    db = FirebaseClient.get_instance()
+
+    keys = db.get_all_old_entries("programs-display").keys()
+    print(keys)
+    for key in keys:
+        print(f"Moved {key}")
+        db.migrate("programs-display", "programs-history", key)
+
+    db.save("demo", {"overview": {"link": "example.com"}}, "custom_id")
