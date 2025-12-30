@@ -89,6 +89,13 @@ class Refresher:
         max_ver: int = max(docs_with_link.keys())
         return docs_with_link[max_ver]
 
+        """
+        
+        MOVE ALL DATABASE LOGIC TO HERE
+        
+        """
+
+
     def get_all_latest_entries(self, collection_path: str) -> dict[str, dict]:
         self.__get_all_data(collection_path)
 

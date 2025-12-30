@@ -198,7 +198,7 @@ class SchemaModelFactory:
         "Returns the RootSchema class"
         return RootSchema
     
-    def make(self, s:str|Fields):
+    def make(self, s: str | Fields):
         "Returns the specified class based on the given string"
         if isinstance(s, Fields):
             s = s.value
@@ -214,7 +214,10 @@ class SchemaModelFactory:
             "all": self.make_root
         }
 
-        return sections[s]()
+        try:
+            return sections[s]()
+        except KeyError:
+            raise ValueError(f"Schema section '{s}' not found")
     
 if __name__ == "__main__":
 

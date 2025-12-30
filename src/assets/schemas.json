@@ -5,8 +5,8 @@
     "description": "not provided",
 
     "link": "not provided",
-    "subject": [],
-    "tags": []
+    "subject": ["not provided"],
+    "tags": ["not provided"]
   },
 
   "eligibility": {
@@ -67,7 +67,7 @@
         "free": "not provided",
         "lowest": "not provided",
         "highest": "not provided",
-        "financial-aid-available": "not provided"
+        "financial_aid_available": "not provided"
       }
     ],
 
