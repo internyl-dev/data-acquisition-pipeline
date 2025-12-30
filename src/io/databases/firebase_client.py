@@ -73,11 +73,14 @@ class FirebaseClient:
     def set(self, id:str, document:dict|RootSchema):
         pass
 
-    def get_by_id(self, collection_path: str, id:str) -> dict:
+    def get_by_id(self, collection_path: str, doc_id:str) -> dict:
         collection_ref = self.database.collection(collection_path)
-        doc = collection_ref.document(id).get()
+        doc = collection_ref.document(doc_id).get()
         data = doc.to_dict()
-        return data if data is not None else {}
+        if data is not None:
+            return data
+        else:
+            raise ValueError(f"Data of id '{doc_id}' not found")
 
     def get_all_data(self, collection_path:str)-> dict:
         collection_ref = self.database.collection(collection_path)
@@ -85,15 +88,84 @@ class FirebaseClient:
 
         return {document.id: document.to_dict() for document in documents}
 
-    def delete_by_id(self, collection_path:str, id:str) -> None:
+    def delete_by_id(self, collection_path:str, doc_id:str) -> None:
         collection_ref = self.database.collection(collection_path)
-        collection_ref.document(id).delete()
+        collection_ref.document(doc_id).delete()
 
     def reindex(self, collection_path: str, old_id: str) -> None:
         data = self.get_by_id(collection_path, old_id)
         self.delete_by_id(collection_path, old_id)
         self.save(collection_path, data, set_index=True)
 
+    @staticmethod
+    def get_link_from_id(doc_id: str) -> str:
+        return "-".join(doc_id.split("-")[:-1])
+    
+    @staticmethod
+    def get_version_from_id(doc_id: str) -> int:
+        return int(doc_id.split("-")[-1])
+
+    def link_in_id(self, doc_id: str, link: str) -> bool:
+        return self.get_link_from_id(doc_id) == link
+
+    def get_latest_entry(self,  
+                         link: str, 
+                         collection_path: str = "",
+                         all_data: Optional[dict[str, dict]] = None) -> dict[str, dict]:
+        """
+        Gets the latest data entry of the specified link
+        Returns:
+            {id (str): data (dict)}
+        """
+        if (collection_path=="") and (all_data is None):
+            raise ValueError("Either collection path or all_data must be given, both empty")
+
+        all_data = all_data or self.get_all_data(collection_path)
+
+        # Documents end with a "-" followed by a number representing the version of the doc
+        # Find all data with the same link as the link provided
+        docs_with_link: dict[int, dict] = {}
+        for doc_id in all_data:
+            if self.link_in_id(doc_id, link):
+                # {version: {id: data}}
+                ver = self.get_version_from_id(doc_id)
+                docs_with_link[ver] = {doc_id: all_data[doc_id]}
+
+        if not docs_with_link:
+            raise LookupError(f"No documents with link '{link}' found")
+
+        max_ver: int = max(docs_with_link.keys())
+        return docs_with_link[max_ver]
+
+    def get_all_latest_entries(self, 
+                               collection_path: str = "", 
+                               all_data: Optional[dict[str, dict]] = None) -> dict[str, dict]:
+        """
+        Returns all latest data entries
+        Returns:
+            {id (str): data (dict)}
+        """
+        if (collection_path=="") and (all_data is None):
+            raise ValueError("Either collection path or all_data must be given, both empty")
+
+        all_data = all_data or self.get_all_data(collection_path)
+
+        all_latest_entries: dict[str, dict] = {}
+        for doc_id in all_data:
+            if doc_id not in all_latest_entries:
+                all_latest_entries.update(self.get_latest_entry(self.get_link_from_id(doc_id), 
+                                          collection_path, 
+                                          all_data))
+        
+        return all_latest_entries
+
 if __name__ == "__main__":
-    print(FirebaseClient.get_instance().get_by_id("programs-display", "0e9rDP8y6T5xNM3O2Xoj"))
-    FirebaseClient.get_instance().reindex("programs-display", "0e9rDP8y6T5xNM3O2Xoj")
+    #print(FirebaseClient.get_instance().get_by_id("programs-display", "0e9rDP8y6T5xNM3O2Xoj"))
+    #FirebaseClient.get_instance().reindex("programs-display", "0e9rDP8y6T5xNM3O2Xoj")
+    print()
+    all_data = FirebaseClient.get_instance().get_all_data("demo-display")
+    print(all_data.keys())
+    print()
+    print(FirebaseClient.get_instance().get_latest_entry("https:\\\\www.kipr.org\\virtual", "demo-display").keys())
+    print()
+    print(FirebaseClient.get_instance().get_all_latest_entries(all_data=all_data).keys())
